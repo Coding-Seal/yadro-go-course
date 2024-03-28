@@ -1,7 +1,7 @@
 .PHONY build:
 build:
 	@echo Building...
-	go build
+	go build -o myapp
 .PHONY lint:
 lint:
 	@echo Linting...
