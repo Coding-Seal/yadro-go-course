@@ -5,4 +5,4 @@ build:
 .PHONY lint:
 lint:
 	@echo Linting...
-	golangci-lint run
+	golangci-lint run --enable wsl
