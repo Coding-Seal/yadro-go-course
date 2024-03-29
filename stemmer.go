@@ -4,7 +4,11 @@ import (
 	"bufio"
 	"github.com/kljensen/snowball"
 	"io"
+	"regexp"
+	"strings"
 )
+
+var nonWordSymbolRegexp = regexp.MustCompile("(^[^0-9A-Za-z_])|([^0-9A-Za-z_]$)")
 
 type Stemmer struct {
 	stopWords map[string]struct{}
@@ -16,6 +20,7 @@ func NewStemmer(stopWords map[string]struct{}) *Stemmer {
 	if stopWords != nil {
 		return &Stemmer{stopWords: stopWords}
 	}
+
 	return &Stemmer{stopWords: map[string]struct{}{
 		"a": {}, "about": {}, "above": {}, "after": {}, "again": {}, "against": {}, "all": {},
 		"am": {}, "an": {}, "and": {}, "any": {}, "are": {}, "aren't": {}, "as": {}, "at": {},
@@ -41,20 +46,35 @@ func NewStemmer(stopWords map[string]struct{}) *Stemmer {
 		"which": {}, "while": {}, "who": {}, "who's": {}, "whom": {}, "why": {}, "why's": {},
 		"with": {}, "won't": {}, "would": {}, "wouldn't": {}, "you": {}, "you'd": {}, "you'll": {},
 		"you're": {}, "you've": {}, "your": {}, "yours": {}, "yourself": {}, "yourselves": {}}}
-
 }
 
 func ParseStopWords(reader io.Reader) map[string]struct{} {
 	stopWords := make(map[string]struct{})
 	scanner := bufio.NewScanner(reader)
 	scanner.Split(bufio.ScanWords)
+
 	for scanner.Scan() {
 		word := scanner.Text()
 		if word != "" {
 			stopWords[word] = struct{}{}
 		}
 	}
+
 	return stopWords
+}
+
+func ParsePhrase(phrase string) []string {
+	words := strings.Fields(phrase)
+	for i := range words {
+		word := nonWordSymbolRegexp.ReplaceAllString(words[i], "")
+		if word != "" {
+			words[i] = word
+		} else {
+			words = append(words[:i], words[i+1:]...)
+		}
+	}
+
+	return words
 }
 
 // isStopWord is method, that check if word is not significant
@@ -65,6 +85,7 @@ func (s *Stemmer) isStopWord(word string) bool {
 func (s *Stemmer) Stem(words []string) []string {
 	// using map to avoid duplicates
 	stemmed := make(map[string]struct{})
+
 	for _, word := range words {
 		if s.isStopWord(word) || word == "" {
 			continue
@@ -75,8 +96,10 @@ func (s *Stemmer) Stem(words []string) []string {
 	}
 	// transform map into slice
 	keys := make([]string, 0, len(stemmed))
+
 	for k := range stemmed {
 		keys = append(keys, k)
 	}
+
 	return keys
 }
