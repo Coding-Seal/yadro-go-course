@@ -5,6 +5,7 @@ import (
 	"github.com/kljensen/snowball"
 	"io"
 	"regexp"
+	"slices"
 	"strings"
 )
 
@@ -65,14 +66,20 @@ func ParseStopWords(reader io.Reader) map[string]struct{} {
 
 func ParsePhrase(phrase string) []string {
 	words := strings.Fields(phrase)
-	for i := range words {
+	deleted := 0
+
+	for i := 0; i < len(words)-deleted; i++ {
 		word := nonWordSymbolRegexp.ReplaceAllString(words[i], "")
 		if word != "" {
 			words[i] = word
 		} else {
-			words = append(words[:i], words[i+1:]...)
+			words[i] = words[len(words)-deleted-1]
+			i--
+			deleted++
 		}
 	}
+
+	words = slices.Delete(words, len(words)-deleted, len(words))
 
 	return words
 }
