@@ -2,7 +2,7 @@
 build:
 	@echo Building...
 	go mod tidy
-	go build -o myapp
+	go build -o myapp ./cmd/xkcd
 .PHONY lint:
 lint:
 	@echo Linting...

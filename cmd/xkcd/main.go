@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"yadro-go-course/pkg/words"
 )
 
 func main() {
@@ -13,7 +14,7 @@ func main() {
 	var stopWordsFileName string
 
 	flag.StringVar(&input, "s", "", "String to stem")
-	flag.StringVar(&stopWordsFileName, "file", "", "File with stop words")
+	flag.StringVar(&stopWordsFileName, "file", "", "File with stop inputWords")
 	flag.Parse()
 
 	if input == "" {
@@ -21,7 +22,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	words := ParsePhrase(input)
+	inputWords := words.ParsePhrase(input)
 
 	var stopWords map[string]struct{}
 	// Handle optional file with stopWords
@@ -32,10 +33,10 @@ func main() {
 			os.Exit(1)
 		}
 
-		stopWords = ParseStopWords(stopWordsFile)
+		stopWords = words.ParseStopWords(stopWordsFile)
 	}
 
-	stemmer := NewStemmer(stopWords)
-	stemmed := stemmer.Stem(words)
+	stemmer := words.NewStemmer(stopWords)
+	stemmed := stemmer.Stem(inputWords)
 	fmt.Println(strings.Join(stemmed, " "))
 }
