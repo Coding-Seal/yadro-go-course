@@ -1,42 +1,68 @@
 package main
 
 import (
+	"context"
 	"flag"
-	"fmt"
+	"log"
 	"os"
-	"strings"
-	"yadro-go-course/pkg/words"
+	"os/signal"
+	"syscall"
+	"yadro-go-course/pkg/config"
+	"yadro-go-course/pkg/database"
+	"yadro-go-course/pkg/xkcd"
 )
 
 func main() {
-	var input string
+	var printTerm bool
 
-	var stopWordsFileName string
+	var numComics int
 
-	flag.StringVar(&input, "s", "", "String to stem")
-	flag.StringVar(&stopWordsFileName, "file", "", "File with stop inputWords")
+	flag.BoolVar(&printTerm, "o", false, "Print in terminal")
+	flag.IntVar(&numComics, "n", 2917, "How many comics to retrieve")
 	flag.Parse()
 
-	if input == "" {
-		fmt.Println("Provide string to stem using -s flag")
+	conf, err := config.NewConfig("config.yaml")
+	if err != nil {
+		log.Println("Could not parse config.yaml ", err)
+	}
+
+	dbFile, err := os.OpenFile(conf.DBfile, os.O_RDWR|os.O_CREATE, 0755)
+
+	if err != nil {
+		log.Println("Could not open db file", err)
 		os.Exit(1)
 	}
 
-	inputWords := words.ParsePhrase(input)
+	ctx, cancel := context.WithCancel(context.Background())
 
-	var stopWords map[string]struct{}
-	// Handle optional file with stopWords
-	if stopWordsFileName != "" {
-		stopWordsFile, err := os.Open(stopWordsFileName)
-		if err != nil {
-			fmt.Printf("Could not open file \"%s\"\n", stopWordsFileName)
-			os.Exit(1)
-		}
+	defer cancel()
 
-		stopWords = words.ParseStopWords(stopWordsFile)
+	runChan := make(chan os.Signal, 1)
+	signal.Notify(runChan, os.Interrupt, syscall.SIGTSTP)
+
+	go func() {
+		<-runChan
+		cancel()
+		log.Println("Shutting down pres Ctrl + c to force")
+	}()
+
+	client := xkcd.NewClient(conf.SourceURL)
+
+	log.Println("Starting ...")
+
+	comics := client.GetFirst(ctx, numComics)
+
+	log.Println("Writing to disk ...")
+
+	jsonDB := database.NewJsonDB(dbFile)
+	jsonDB.Save(comics)
+
+	if printTerm {
+		log.Println("Printing ...")
+
+		textDB := database.NewTextDB(os.Stdout)
+		textDB.Save(comics)
 	}
 
-	stemmer := words.NewStemmer(stopWords)
-	stemmed := stemmer.Stem(inputWords)
-	fmt.Println(strings.Join(stemmed, " "))
+	log.Println("Done ...")
 }

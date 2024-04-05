@@ -9,7 +9,7 @@ import (
 	"strings"
 )
 
-var nonWordSymbolRegexp = regexp.MustCompile("(^[^0-9A-Za-z_])|([^0-9A-Za-z_]$)")
+var nonWordSymbolRegexp = regexp.MustCompile("[^0-9A-Za-z_]+")
 
 type Stemmer struct {
 	stopWords map[string]struct{}
@@ -46,7 +46,8 @@ func NewStemmer(stopWords map[string]struct{}) *Stemmer {
 		"weren't": {}, "what": {}, "what's": {}, "when": {}, "when's": {}, "where": {}, "where's": {},
 		"which": {}, "while": {}, "who": {}, "who's": {}, "whom": {}, "why": {}, "why's": {},
 		"with": {}, "won't": {}, "would": {}, "wouldn't": {}, "you": {}, "you'd": {}, "you'll": {},
-		"you're": {}, "you've": {}, "your": {}, "yours": {}, "yourself": {}, "yourselves": {}}}
+		"you're": {}, "you've": {}, "your": {}, "yours": {}, "yourself": {}, "yourselves": {},
+		"alt": {}, "text": {}, "title": {}}}
 }
 
 func ParseStopWords(reader io.Reader) map[string]struct{} {
@@ -65,11 +66,12 @@ func ParseStopWords(reader io.Reader) map[string]struct{} {
 }
 
 func ParsePhrase(phrase string) []string {
+	phrase = nonWordSymbolRegexp.ReplaceAllString(phrase, " ")
 	words := strings.Fields(phrase)
 	deleted := 0
 
 	for i := 0; i < len(words)-deleted; i++ {
-		word := nonWordSymbolRegexp.ReplaceAllString(words[i], "")
+		word := strings.ToLower(words[i])
 		if word != "" {
 			words[i] = word
 		} else {
@@ -94,10 +96,14 @@ func (s *Stemmer) Stem(words []string) []string {
 	stemmed := make(map[string]struct{})
 
 	for _, word := range words {
-		if s.isStopWord(word) || word == "" {
+		if len(word) < 5 || s.isStopWord(word) {
 			continue
 		} else {
 			word, _ = snowball.Stem(word, "english", false)
+			if len(word) < 4 {
+				continue
+			}
+
 			stemmed[word] = struct{}{}
 		}
 	}
