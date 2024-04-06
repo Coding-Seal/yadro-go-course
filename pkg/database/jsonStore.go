@@ -2,24 +2,28 @@ package database
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log"
+	"os"
 	"yadro-go-course/pkg/comic"
 )
 
 type JsonDB struct {
-	rw io.ReadWriter
+	file *os.File
 }
 
-func NewJsonDB(rw io.ReadWriter) *JsonDB {
+func NewJsonDB(file *os.File) *JsonDB {
 	return &JsonDB{
-		rw: rw,
+		file: file,
 	}
 }
 
 func (db *JsonDB) Save(comics map[int]*comic.Comic) {
-	encoder := json.NewEncoder(db.rw)
+	_ = db.file.Truncate(0)
+	_, _ = db.file.Seek(0, 0)
+	encoder := json.NewEncoder(db.file)
 	err := encoder.Encode(comics)
 
 	if err != nil {
@@ -28,10 +32,14 @@ func (db *JsonDB) Save(comics map[int]*comic.Comic) {
 }
 func (db *JsonDB) Read() map[int]*comic.Comic {
 	comics := make(map[int]*comic.Comic)
-	decoder := json.NewDecoder(db.rw)
+	decoder := json.NewDecoder(db.file)
 	err := decoder.Decode(&comics)
 
 	if err != nil {
+		if errors.Is(err, io.EOF) {
+			return comics
+		}
+
 		log.Println(fmt.Errorf("error while loading comics: %w", err))
 	}
 

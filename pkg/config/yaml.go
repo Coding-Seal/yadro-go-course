@@ -25,6 +25,7 @@ func NewConfig(configPath string) (*Config, error) {
 	defer file.Close()
 	d := yaml.NewDecoder(file)
 	err = d.Decode(&config)
+
 	if err != nil {
 		return config, fmt.Errorf("parsing config: %w", err)
 	}

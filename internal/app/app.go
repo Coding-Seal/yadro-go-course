@@ -3,8 +3,8 @@ package app
 import (
 	"context"
 	"fmt"
-	"io"
 	"maps"
+	"os"
 	"yadro-go-course/pkg/comic"
 	"yadro-go-course/pkg/database"
 	"yadro-go-course/pkg/words"
@@ -18,11 +18,11 @@ type App struct {
 	comics  map[int]*comic.Comic
 }
 
-func NewApp(source string, rw io.ReadWriter, stopWords map[string]struct{}) *App {
+func NewApp(source string, file *os.File, stopWords map[string]struct{}) *App {
 	return &App{
 		fetcher: xkcd.NewFetcher(source),
 		stemmer: words.NewStemmer(stopWords),
-		db:      database.NewJsonDB(rw),
+		db:      database.NewJsonDB(file),
 		comics:  make(map[int]*comic.Comic),
 	}
 }
