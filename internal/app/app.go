@@ -44,7 +44,8 @@ func (a *App) FetchRemainingComics(lastID int, ctx context.Context) {
 
 	for _, fetchedComic := range a.fetcher.GetComics(ctx, missingComics) {
 		if fetchedComic != nil {
-			a.comics[fetchedComic.ID] = a.toComic(fetchedComic)
+			id, conv := a.toComic(fetchedComic)
+			a.comics[id] = conv
 		}
 	}
 }
@@ -55,7 +56,8 @@ func (a *App) FetchLastComicID(ctx context.Context) (int, error) {
 func (a *App) FetchAll(lastID int, ctx context.Context) {
 	for _, fetchedComic := range a.fetcher.GetALLComics(ctx, lastID) {
 		if fetchedComic != nil {
-			a.comics[fetchedComic.ID] = a.toComic(fetchedComic)
+			id, conv := a.toComic(fetchedComic)
+			a.comics[id] = conv
 		}
 	}
 }
@@ -63,28 +65,27 @@ func (a *App) FetchAll(lastID int, ctx context.Context) {
 func (a *App) PrintComics(num int) {
 	i := 1
 
-	for _, c := range a.comics {
-		fmt.Printf("ID=%d ImgURl=%s Keywords=%v\n", c.ID, c.ImgURL, c.Keywords)
+	for id, c := range a.comics {
+		fmt.Printf("ID=%d ImgURl=%s Keywords=%v\n", id, c.ImgURL, c.Keywords)
 
 		i++
 
-		if i >= num {
+		if i > num {
 			break
 		}
 	}
 }
 func (a *App) PrintAllComics() {
-	for _, c := range a.comics {
-		fmt.Printf("ID=%d ImgURl=%s Keywords=%v\n", c.ID, c.ImgURL, c.Keywords)
+	for id, c := range a.comics {
+		fmt.Printf("ID=%d ImgURl=%s Keywords=%v\n", id, c.ImgURL, c.Keywords)
 	}
 }
-func (a *App) toComic(f *xkcd.FetchedComic) *comic.Comic {
+func (a *App) toComic(f *xkcd.FetchedComic) (int, *comic.Comic) {
 	if f == nil {
-		return nil
+		return 0, nil
 	}
 
-	return &comic.Comic{
-		ID:       f.ID,
+	return f.ID, &comic.Comic{
 		ImgURL:   f.ImgURL,
 		Keywords: a.stemmer.Stem(words.ParsePhrase(f.Title + " " + f.AltTranscription + " " + f.Transcription)),
 	}
