@@ -100,7 +100,7 @@ func (s *Stemmer) Stem(words []string) []string {
 			continue
 		} else {
 			word, _ = snowball.Stem(word, "english", false)
-			if len(word) < 4 {
+			if len(word) < 5 {
 				continue
 			}
 

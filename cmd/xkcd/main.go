@@ -8,6 +8,7 @@ import (
 	"os/signal"
 	"yadro-go-course/internal/app"
 	"yadro-go-course/pkg/config"
+	"yadro-go-course/pkg/words"
 )
 
 func main() {
@@ -15,8 +16,11 @@ func main() {
 
 	var numComics int
 
-	flag.BoolVar(&printTerm, "o", false, "Print in terminal")
-	flag.IntVar(&numComics, "n", 0, "How many comics to retrieve")
+	var stopWords string
+
+	flag.BoolVar(&printTerm, "o", false, "Print to terminal")
+	flag.IntVar(&numComics, "n", 0, "How many comics to print")
+	flag.StringVar(&stopWords, "file", "", "Provide list of stop words")
 	flag.Parse()
 
 	conf, err := config.NewConfig("config.yaml")
@@ -32,10 +36,24 @@ func main() {
 
 	defer dbFile.Close()
 
+	var stopWordsMap map[string]struct{}
+
+	if stopWords != "" {
+		stopWordsFile, err := os.Open(stopWords)
+
+		if err != nil {
+			log.Fatalln("Could not open stop words file", err)
+		}
+
+		stopWordsMap = words.ParseStopWords(stopWordsFile)
+
+		defer stopWordsFile.Close()
+	}
+
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer stop()
 
-	client := app.NewApp(conf.SourceURL, dbFile, nil)
+	client := app.NewApp(conf.SourceURL, dbFile, stopWordsMap)
 
 	client.LoadComics()
 	lastID, err := client.FetchLastComicID(ctx)
@@ -54,6 +72,4 @@ func main() {
 			client.PrintComics(numComics)
 		}
 	}
-
-	log.Println("Done ...")
 }
