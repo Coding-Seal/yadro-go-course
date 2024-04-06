@@ -3,24 +3,24 @@ package database
 import (
 	"encoding/json"
 	"io"
-	"yadro-go-course/pkg/xkcd"
+	"yadro-go-course/pkg/comic"
 )
 
-type DB interface {
-	Save(map[int]*xkcd.Comic)
-}
-
 type JsonDB struct {
-	w io.Writer
+	w io.ReadWriter
 }
 
-func NewJsonDB(w io.Writer) *JsonDB {
+func NewJsonDB(w io.ReadWriter) *JsonDB {
 	return &JsonDB{
 		w: w,
 	}
 }
 
-func (db *JsonDB) Save(comics map[int]*xkcd.Comic) {
+func (db *JsonDB) Save(comics map[int]*comic.Comic) {
 	encoder := json.NewEncoder(db.w)
 	_ = encoder.Encode(comics) //FIXME
+}
+func (db *JsonDB) Read() map[int]*comic.Comic {
+	//FIXME
+	return nil
 }

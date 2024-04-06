@@ -3,7 +3,7 @@ package database
 import (
 	"fmt"
 	"io"
-	"yadro-go-course/pkg/xkcd"
+	"yadro-go-course/pkg/comic"
 )
 
 type TextDB struct {
@@ -16,10 +16,10 @@ func NewTextDB(w io.Writer) *TextDB {
 	}
 }
 
-func (db *TextDB) Save(comics map[int]*xkcd.Comic) {
+func (db *TextDB) Save(comics map[int]*comic.Comic) {
 	for _, comic := range comics {
-		_, err := fmt.Fprintf(db.w, "id=%d title=\"%s\" imgURL=\"%s\" keywords=%v\n",
-			comic.ID, comic.Title, comic.ImgURL, comic.Keywords)
+		_, err := fmt.Fprintf(db.w, "id=%d imgURL=\"%s\" keywords=%v\n",
+			comic.ID, comic.ImgURL, comic.Keywords)
 		if err != nil {
 			return
 		}

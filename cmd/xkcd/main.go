@@ -6,7 +6,6 @@ import (
 	"log"
 	"os"
 	"os/signal"
-	"syscall"
 	"yadro-go-course/pkg/config"
 	"yadro-go-course/pkg/database"
 	"yadro-go-course/pkg/xkcd"
@@ -33,24 +32,14 @@ func main() {
 		os.Exit(1)
 	}
 
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
+	defer stop()
 
-	defer cancel()
-
-	runChan := make(chan os.Signal, 1)
-	signal.Notify(runChan, os.Interrupt, syscall.SIGTSTP)
-
-	go func() {
-		<-runChan
-		cancel()
-		log.Println("Shutting down pres Ctrl + c to force")
-	}()
-
-	client := xkcd.NewClient(conf.SourceURL)
+	client := xkcd.NewFetcher(conf.SourceURL)
 
 	log.Println("Starting ...")
 
-	comics := client.GetFirst(ctx, numComics)
+	comics := client.GetComics(ctx, numComics)
 
 	log.Println("Writing to disk ...")
 

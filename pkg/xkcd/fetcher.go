@@ -3,49 +3,55 @@ package xkcd
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
-	"strconv"
-	"strings"
 	"sync"
+	"time"
+	"yadro-go-course/pkg/comic"
 	"yadro-go-course/pkg/words"
 )
 
-type fetcher struct {
+type Fetcher struct {
 	client *http.Client
 	source string
 }
 
-func newFetcher(source string) *fetcher {
-	return &fetcher{
-		client: http.DefaultClient,
+func NewFetcher(source string) *Fetcher {
+	return &Fetcher{
+		client: &http.Client{
+			Transport: http.DefaultTransport,
+			Timeout:   time.Second * 7,
+		},
 		source: source,
 	}
 }
-func (f *fetcher) getFirst(ctx context.Context, num int) map[int]*fetchedComic {
+func (f *Fetcher) GetComics(ctx context.Context, ids []int) map[int]*FetchedComic {
 	wg := &sync.WaitGroup{}
 	mu := sync.Mutex{}
-	comics := make(map[int]*fetchedComic, num)
+	comics := make(map[int]*FetchedComic, len(ids))
 
-	for i := 0; i <= num; i++ {
+	for id := range ids {
 		wg.Add(1)
 
 		go func(id int) {
-			comic := f.get(ctx, id)
+			defer wg.Done()
+
+			comic := f.Get(ctx, id)
+
 			if comic != nil {
 				mu.Lock()
 				comics[id] = comic
 				mu.Unlock()
 			}
-
-			wg.Done()
-		}(i)
+		}(id)
 	}
+
 	wg.Wait()
 
 	return comics
 }
-func (f *fetcher) get(ctx context.Context, id int) *fetchedComic {
+func (f *Fetcher) Get(ctx context.Context, id int) *FetchedComic {
 	req, err := http.NewRequestWithContext(ctx, "GET", buildURL(f.source, id), nil)
 	if err != nil {
 		return nil
@@ -64,17 +70,10 @@ func (f *fetcher) get(ctx context.Context, id int) *fetchedComic {
 }
 
 func buildURL(source string, id int) string {
-	urlBuilder := strings.Builder{}
-	urlBuilder.WriteString(source)
-	urlBuilder.WriteString("/")
-	urlBuilder.WriteString(strconv.Itoa(id))
-	urlBuilder.WriteString("/")
-	urlBuilder.WriteString("info.0.json")
-
-	return urlBuilder.String()
+	return fmt.Sprintf("%s/%d/info.0.json", source, id)
 }
 
-type fetchedComic struct {
+type FetchedComic struct {
 	ID               int    `json:"num"`
 	ImgURL           string `json:"img"`
 	Title            string `json:"title"`
@@ -82,16 +81,15 @@ type fetchedComic struct {
 	AltTranscription string `json:"alt"`
 }
 
-func (d *fetchedComic) toComic(stemmer *words.Stemmer) *Comic {
-	return &Comic{
+func (d *FetchedComic) ToComic(stemmer *words.Stemmer) *comic.Comic {
+	return &comic.Comic{
 		ID:       d.ID,
-		Title:    d.Title,
 		ImgURL:   d.ImgURL,
 		Keywords: stemmer.Stem(words.ParsePhrase(d.AltTranscription + " " + d.Transcription + " " + d.Title)),
 	}
 }
-func parseJsonComic(r io.Reader) *fetchedComic {
-	var dto fetchedComic
+func parseJsonComic(r io.Reader) *FetchedComic {
+	var dto FetchedComic
 
 	decoder := json.NewDecoder(r)
 	err := decoder.Decode(&dto)
