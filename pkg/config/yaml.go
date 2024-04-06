@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"gopkg.in/yaml.v3"
 	"os"
 )
@@ -18,12 +19,12 @@ func NewConfig(configPath string) (*Config, error) {
 	file, err := os.Open(configPath)
 
 	if err != nil {
-		return config, err
+		return config, fmt.Errorf("loading config: %w", err)
 	}
 
 	defer file.Close()
 	d := yaml.NewDecoder(file)
 	err = d.Decode(&config)
 
-	return config, err
+	return config, fmt.Errorf("parsing config: %w", err)
 }

@@ -37,9 +37,11 @@ func main() {
 
 	client.LoadComics()
 	lastID, err := client.FetchLastComicID(ctx)
+
 	if err != nil {
 		log.Fatalln("Could not fetch last comic", err)
 	}
+
 	client.FetchRemainingComics(lastID, ctx)
 	client.SaveComics()
 

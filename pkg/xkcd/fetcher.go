@@ -76,21 +76,21 @@ func (f *Fetcher) GetLastID(ctx context.Context) (int, error) {
 	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
 
 	if err != nil {
-		return 0, err
+		return 0, fmt.Errorf("GetLastID : %w", err)
 	}
 
 	req.Header.Add("Accept", `application/json`)
 	resp, err := f.client.Do(req)
 
 	if err != nil {
-		return 0, err
+		return 0, fmt.Errorf("GetLastID : %w", err)
 	}
 
 	defer resp.Body.Close()
 	fetched := parseJsonComic(req.Body)
 
 	if fetched == nil {
-		return 0, errors.New("could not parse last comics")
+		return 0, errors.New("could not parse last comic")
 	}
 
 	return fetched.ID, nil
