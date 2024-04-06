@@ -3,13 +3,12 @@ package xkcd
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"sync"
 	"time"
-	"yadro-go-course/pkg/comic"
-	"yadro-go-course/pkg/words"
 )
 
 type Fetcher struct {
@@ -51,8 +50,11 @@ func (f *Fetcher) GetComics(ctx context.Context, ids []int) map[int]*FetchedComi
 
 	return comics
 }
+
 func (f *Fetcher) Get(ctx context.Context, id int) *FetchedComic {
-	req, err := http.NewRequestWithContext(ctx, "GET", buildURL(f.source, id), nil)
+	url := fmt.Sprintf("%s/%d/info.0.json", f.source, id)
+	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+
 	if err != nil {
 		return nil
 	}
@@ -69,8 +71,55 @@ func (f *Fetcher) Get(ctx context.Context, id int) *FetchedComic {
 	return parseJsonComic(resp.Body)
 }
 
-func buildURL(source string, id int) string {
-	return fmt.Sprintf("%s/%d/info.0.json", source, id)
+func (f *Fetcher) GetLastID(ctx context.Context) (int, error) {
+	url := fmt.Sprintf("%s/info.0.json", f.source)
+	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+
+	if err != nil {
+		return 0, err
+	}
+
+	req.Header.Add("Accept", `application/json`)
+	resp, err := f.client.Do(req)
+
+	if err != nil {
+		return 0, err
+	}
+
+	defer resp.Body.Close()
+	fetched := parseJsonComic(req.Body)
+
+	if fetched == nil {
+		return 0, errors.New("could not parse last comics")
+	}
+
+	return fetched.ID, nil
+}
+
+func (f *Fetcher) GetALLComics(ctx context.Context, lastID int) map[int]*FetchedComic {
+	wg := &sync.WaitGroup{}
+	mu := sync.Mutex{}
+	comics := make(map[int]*FetchedComic, lastID)
+
+	for id := 0; id <= lastID; id++ {
+		wg.Add(1)
+
+		go func(id int) {
+			defer wg.Done()
+
+			comic := f.Get(ctx, id)
+
+			if comic != nil {
+				mu.Lock()
+				comics[id] = comic
+				mu.Unlock()
+			}
+		}(id)
+	}
+
+	wg.Wait()
+
+	return comics
 }
 
 type FetchedComic struct {
@@ -81,13 +130,6 @@ type FetchedComic struct {
 	AltTranscription string `json:"alt"`
 }
 
-func (d *FetchedComic) ToComic(stemmer *words.Stemmer) *comic.Comic {
-	return &comic.Comic{
-		ID:       d.ID,
-		ImgURL:   d.ImgURL,
-		Keywords: stemmer.Stem(words.ParsePhrase(d.AltTranscription + " " + d.Transcription + " " + d.Title)),
-	}
-}
 func parseJsonComic(r io.Reader) *FetchedComic {
 	var dto FetchedComic
 
