@@ -7,17 +7,17 @@ import (
 )
 
 type JsonDB struct {
-	w io.ReadWriter
+	rw io.ReadWriter
 }
 
-func NewJsonDB(w io.ReadWriter) *JsonDB {
+func NewJsonDB(rw io.ReadWriter) *JsonDB {
 	return &JsonDB{
-		w: w,
+		rw: rw,
 	}
 }
 
 func (db *JsonDB) Save(comics map[int]*comic.Comic) {
-	encoder := json.NewEncoder(db.w)
+	encoder := json.NewEncoder(db.rw)
 	_ = encoder.Encode(comics) //FIXME
 }
 func (db *JsonDB) Read() map[int]*comic.Comic {
