@@ -30,6 +30,8 @@ func main() {
 		log.Fatalln("Could not open db file", err)
 	}
 
+	defer dbFile.Close()
+
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer stop()
 
