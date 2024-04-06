@@ -30,7 +30,7 @@ func (f *Fetcher) GetComics(ctx context.Context, ids []int) map[int]*FetchedComi
 	mu := sync.Mutex{}
 	comics := make(map[int]*FetchedComic, len(ids))
 
-	for id := range ids {
+	for _, id := range ids {
 		wg.Add(1)
 
 		go func(id int) {
@@ -87,7 +87,7 @@ func (f *Fetcher) GetLastID(ctx context.Context) (int, error) {
 	}
 
 	defer resp.Body.Close()
-	fetched := parseJsonComic(req.Body)
+	fetched := parseJsonComic(resp.Body)
 
 	if fetched == nil {
 		return 0, errors.New("could not parse last comic")

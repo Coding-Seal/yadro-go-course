@@ -7,14 +7,14 @@ import (
 )
 
 type Config struct {
-	DBfile    string `yaml:"db_file"`
 	SourceURL string `yaml:"source_url"`
+	DBfile    string `yaml:"db_file"`
 }
 
 func NewConfig(configPath string) (*Config, error) {
 	config := &Config{
-		DBfile:    "database.json",
 		SourceURL: "https://xkcd.com",
+		DBfile:    "database.json",
 	}
 	file, err := os.Open(configPath)
 
@@ -25,6 +25,9 @@ func NewConfig(configPath string) (*Config, error) {
 	defer file.Close()
 	d := yaml.NewDecoder(file)
 	err = d.Decode(&config)
+	if err != nil {
+		return config, fmt.Errorf("parsing config: %w", err)
+	}
 
-	return config, fmt.Errorf("parsing config: %w", err)
+	return config, nil
 }
