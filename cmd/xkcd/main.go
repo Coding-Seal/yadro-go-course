@@ -6,9 +6,8 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"yadro-go-course/internal/app"
 	"yadro-go-course/pkg/config"
-	"yadro-go-course/pkg/database"
-	"yadro-go-course/pkg/xkcd"
 )
 
 func main() {
@@ -17,7 +16,7 @@ func main() {
 	var numComics int
 
 	flag.BoolVar(&printTerm, "o", false, "Print in terminal")
-	flag.IntVar(&numComics, "n", 2917, "How many comics to retrieve")
+	flag.IntVar(&numComics, "n", 0, "How many comics to retrieve")
 	flag.Parse()
 
 	conf, err := config.NewConfig("config.yaml")
@@ -28,29 +27,28 @@ func main() {
 	dbFile, err := os.OpenFile(conf.DBfile, os.O_RDWR|os.O_CREATE, 0755)
 
 	if err != nil {
-		log.Println("Could not open db file", err)
-		os.Exit(1)
+		log.Fatalln("Could not open db file", err)
 	}
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer stop()
 
-	client := xkcd.NewFetcher(conf.SourceURL)
+	client := app.NewApp(conf.SourceURL, dbFile, nil)
 
-	log.Println("Starting ...")
-
-	comics := client.GetComics(ctx, numComics)
-
-	log.Println("Writing to disk ...")
-
-	jsonDB := database.NewJsonDB(dbFile)
-	jsonDB.Save(comics)
+	client.LoadComics()
+	lastID, err := client.FetchLastComicID(ctx)
+	if err != nil {
+		log.Fatalln("Could not fetch last comic", err)
+	}
+	client.FetchRemainingComics(lastID, ctx)
+	client.SaveComics()
 
 	if printTerm {
-		log.Println("Printing ...")
-
-		textDB := database.NewTextDB(os.Stdout)
-		textDB.Save(comics)
+		if numComics == 0 {
+			client.PrintAllComics()
+		} else {
+			client.PrintComics(numComics)
+		}
 	}
 
 	log.Println("Done ...")
