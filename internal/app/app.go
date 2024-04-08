@@ -18,9 +18,9 @@ type App struct {
 	comics  map[int]*comic.Comic
 }
 
-func NewApp(source string, file *os.File, stopWords map[string]struct{}) *App {
+func NewApp(source string, file *os.File, stopWords map[string]struct{}, concurrencyLimit int) *App {
 	return &App{
-		fetcher: xkcd.NewFetcher(source),
+		fetcher: xkcd.NewFetcher(source, concurrencyLimit),
 		stemmer: words.NewStemmer(stopWords),
 		db:      database.NewJsonDB(file),
 		comics:  make(map[int]*comic.Comic),
@@ -54,7 +54,7 @@ func (a *App) FetchLastComicID(ctx context.Context) (int, error) {
 	return a.fetcher.GetLastID(ctx)
 }
 func (a *App) FetchAll(lastID int, ctx context.Context) {
-	for _, fetchedComic := range a.fetcher.GetALLComics(ctx, lastID) {
+	for _, fetchedComic := range a.fetcher.GetAllComics(ctx, lastID) {
 		if fetchedComic != nil {
 			id, conv := a.toComic(fetchedComic)
 			a.comics[id] = conv

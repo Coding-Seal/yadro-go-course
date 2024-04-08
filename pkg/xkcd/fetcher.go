@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"golang.org/x/sync/semaphore"
 	"io"
 	"net/http"
 	"sync"
@@ -12,29 +13,38 @@ import (
 )
 
 type Fetcher struct {
-	client *http.Client
-	source string
+	client           *http.Client
+	source           string
+	concurrencyLimit int
 }
 
-func NewFetcher(source string) *Fetcher {
+func NewFetcher(source string, concurrencyLimit int) *Fetcher {
 	return &Fetcher{
 		client: &http.Client{
 			Transport: http.DefaultTransport,
 			Timeout:   time.Second * 7,
 		},
-		source: source,
+		source:           source,
+		concurrencyLimit: concurrencyLimit,
 	}
 }
 func (f *Fetcher) GetComics(ctx context.Context, ids []int) map[int]*FetchedComic {
 	wg := &sync.WaitGroup{}
 	mu := sync.Mutex{}
 	comics := make(map[int]*FetchedComic, len(ids))
+	sem := semaphore.NewWeighted(int64(f.concurrencyLimit))
 
 	for _, id := range ids {
 		wg.Add(1)
 
 		go func(id int) {
+			err := sem.Acquire(ctx, 1)
+			if err != nil {
+				return
+			}
+
 			defer wg.Done()
+			defer sem.Release(1)
 
 			comic := f.Get(ctx, id)
 
@@ -96,15 +106,22 @@ func (f *Fetcher) GetLastID(ctx context.Context) (int, error) {
 	return fetched.ID, nil
 }
 
-func (f *Fetcher) GetALLComics(ctx context.Context, lastID int) map[int]*FetchedComic {
+func (f *Fetcher) GetAllComics(ctx context.Context, lastID int) map[int]*FetchedComic {
 	wg := &sync.WaitGroup{}
 	mu := sync.Mutex{}
+	sem := semaphore.NewWeighted(int64(f.concurrencyLimit))
 	comics := make(map[int]*FetchedComic, lastID)
 
 	for id := 0; id <= lastID; id++ {
 		wg.Add(1)
 
 		go func(id int) {
+			err := sem.Acquire(ctx, 1)
+			if err != nil {
+				return
+			}
+
+			defer sem.Release(1)
 			defer wg.Done()
 
 			comic := f.Get(ctx, id)

@@ -1,2 +1,3 @@
 source_url: https://xkcd.com
 db_file: somefile.json
+concurrency_limit: 100

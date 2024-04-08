@@ -53,7 +53,7 @@ func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer stop()
 
-	client := app.NewApp(conf.SourceURL, dbFile, stopWordsMap)
+	client := app.NewApp(conf.SourceURL, dbFile, stopWordsMap, conf.ConcurrencyLimit)
 
 	client.LoadComics()
 	lastID, err := client.FetchLastComicID(ctx)
