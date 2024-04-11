@@ -1,42 +1,75 @@
 package main
 
 import (
+	"context"
 	"flag"
-	"fmt"
+	"log"
 	"os"
-	"strings"
+	"os/signal"
+	"yadro-go-course/internal/app"
+	"yadro-go-course/pkg/config"
 	"yadro-go-course/pkg/words"
 )
 
 func main() {
-	var input string
+	var printTerm bool
 
-	var stopWordsFileName string
+	var numComics int
 
-	flag.StringVar(&input, "s", "", "String to stem")
-	flag.StringVar(&stopWordsFileName, "file", "", "File with stop inputWords")
+	var stopWords string
+
+	flag.BoolVar(&printTerm, "o", false, "Print to terminal")
+	flag.IntVar(&numComics, "n", 0, "How many comics to print")
+	flag.StringVar(&stopWords, "file", "", "Provide list of stop words")
 	flag.Parse()
 
-	if input == "" {
-		fmt.Println("Provide string to stem using -s flag")
-		os.Exit(1)
+	conf, err := config.NewConfig("config.yaml")
+	if err != nil {
+		log.Println("Could not parse config.yaml ", err)
 	}
 
-	inputWords := words.ParsePhrase(input)
+	dbFile, err := os.OpenFile(conf.DBfile, os.O_RDWR|os.O_CREATE, 0755)
 
-	var stopWords map[string]struct{}
-	// Handle optional file with stopWords
-	if stopWordsFileName != "" {
-		stopWordsFile, err := os.Open(stopWordsFileName)
+	if err != nil {
+		log.Fatalln("Could not open db file", err)
+	}
+
+	defer dbFile.Close()
+
+	var stopWordsMap map[string]struct{}
+
+	if stopWords != "" {
+		stopWordsFile, err := os.Open(stopWords)
+
 		if err != nil {
-			fmt.Printf("Could not open file \"%s\"\n", stopWordsFileName)
-			os.Exit(1)
+			log.Fatalln("Could not open stop words file", err)
 		}
 
-		stopWords = words.ParseStopWords(stopWordsFile)
+		stopWordsMap = words.ParseStopWords(stopWordsFile)
+
+		defer stopWordsFile.Close()
 	}
 
-	stemmer := words.NewStemmer(stopWords)
-	stemmed := stemmer.Stem(inputWords)
-	fmt.Println(strings.Join(stemmed, " "))
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
+	defer stop()
+
+	client := app.NewApp(conf.SourceURL, dbFile, stopWordsMap, conf.ConcurrencyLimit)
+
+	client.LoadComics()
+	lastID, err := client.FetchLastComicID(ctx)
+
+	if err != nil {
+		log.Fatalln("Could not fetch last comic", err)
+	}
+
+	client.FetchRemainingComics(lastID, ctx)
+	client.SaveComics()
+
+	if printTerm {
+		if numComics == 0 {
+			client.PrintAllComics()
+		} else {
+			client.PrintComics(numComics)
+		}
+	}
 }
