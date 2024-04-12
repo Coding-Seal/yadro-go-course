@@ -35,14 +35,14 @@ func (f *Fetcher) GetComics(ctx context.Context, ids []int) map[int]*FetchedComi
 	sem := semaphore.NewWeighted(int64(f.concurrencyLimit))
 
 	for _, id := range ids {
+		err := sem.Acquire(ctx, 1)
+		if err != nil {
+			break
+		}
+
 		wg.Add(1)
 
 		go func(id int) {
-			err := sem.Acquire(ctx, 1)
-			if err != nil {
-				return
-			}
-
 			defer wg.Done()
 			defer sem.Release(1)
 
