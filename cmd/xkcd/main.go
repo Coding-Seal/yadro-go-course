@@ -54,15 +54,15 @@ func main() {
 	defer stop()
 
 	client := app.NewApp(conf.SourceURL, dbFile, stopWordsMap, conf.ConcurrencyLimit)
-
+	log.Println("loading comics from db")
 	client.LoadComics()
-	lastID, err := client.FetchLastComicID(ctx)
 
+	log.Println("downloading remaining comics")
+	err = client.FetchRemainingComics(ctx)
 	if err != nil {
-		log.Fatalln("Could not fetch last comic", err)
+		log.Println("remaining comics fetched failed:", err)
 	}
-
-	client.FetchRemainingComics(lastID, ctx)
+	log.Println("saving comics in DB")
 	client.SaveComics()
 
 	if printTerm {
@@ -72,4 +72,5 @@ func main() {
 			client.PrintComics(numComics)
 		}
 	}
+	log.Println("Done")
 }

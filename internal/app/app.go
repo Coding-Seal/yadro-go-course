@@ -33,9 +33,13 @@ func (a *App) LoadComics() {
 func (a *App) SaveComics() {
 	a.db.Save(a.comics)
 }
-func (a *App) FetchRemainingComics(lastID int, ctx context.Context) {
+func (a *App) FetchRemainingComics(ctx context.Context) error {
 	var missingComics []int
+	lastID, err := a.FetchLastComicID(ctx)
 
+	if err != nil {
+		return err
+	}
 	for id := 1; id <= lastID; id++ {
 		if _, ok := a.comics[id]; !ok {
 			missingComics = append(missingComics, id)
@@ -48,18 +52,26 @@ func (a *App) FetchRemainingComics(lastID int, ctx context.Context) {
 			a.comics[id] = conv
 		}
 	}
+	return nil
 }
 
 func (a *App) FetchLastComicID(ctx context.Context) (int, error) {
 	return a.fetcher.GetLastID(ctx)
 }
-func (a *App) FetchAll(lastID int, ctx context.Context) {
+func (a *App) FetchAll(ctx context.Context) error {
+	lastID, err := a.FetchLastComicID(ctx)
+
+	if err != nil {
+		return err
+	}
+
 	for _, fetchedComic := range a.fetcher.GetAllComics(ctx, lastID) {
 		if fetchedComic != nil {
 			id, conv := a.toComic(fetchedComic)
 			a.comics[id] = conv
 		}
 	}
+	return nil
 }
 
 func (a *App) PrintComics(num int) {
