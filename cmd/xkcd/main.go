@@ -12,20 +12,17 @@ import (
 )
 
 func main() {
-	var printTerm bool
-
-	var numComics int
-
 	var stopWords string
 
-	flag.BoolVar(&printTerm, "o", false, "Print to terminal")
-	flag.IntVar(&numComics, "n", 0, "How many comics to print")
+	var configName string
+
+	flag.StringVar(&configName, "c", "config.yaml", "Path to config file")
 	flag.StringVar(&stopWords, "file", "", "Provide list of stop words")
 	flag.Parse()
 
-	conf, err := config.NewConfig("config.yaml")
+	conf, err := config.NewConfig(configName)
 	if err != nil {
-		log.Println("Could not parse config.yaml ", err)
+		log.Println("Could not parse", configName, err)
 	}
 
 	dbFile, err := os.OpenFile(conf.DBfile, os.O_RDWR|os.O_CREATE, 0755)
@@ -54,23 +51,20 @@ func main() {
 	defer stop()
 
 	client := app.NewApp(conf.SourceURL, dbFile, stopWordsMap, conf.ConcurrencyLimit)
+
 	log.Println("loading comics from db")
 	client.LoadComics()
 
 	log.Println("downloading remaining comics")
+
 	err = client.FetchRemainingComics(ctx)
+
 	if err != nil {
 		log.Println("remaining comics fetched failed:", err)
 	}
+
 	log.Println("saving comics in DB")
 	client.SaveComics()
 
-	if printTerm {
-		if numComics == 0 {
-			client.PrintAllComics()
-		} else {
-			client.PrintComics(numComics)
-		}
-	}
 	log.Println("Done")
 }
