@@ -112,7 +112,7 @@ func (f *Fetcher) GetAllComics(ctx context.Context, lastID int) map[int]*Fetched
 	sem := semaphore.NewWeighted(int64(f.concurrencyLimit))
 	comics := make(map[int]*FetchedComic, lastID)
 
-	for id := 0; id <= lastID; id++ {
+	for id := 1; id <= lastID; id++ {
 		wg.Add(1)
 
 		go func(id int) {
