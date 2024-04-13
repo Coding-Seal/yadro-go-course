@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"golang.org/x/sync/semaphore"
 	"io"
+	"math"
 	"net/http"
 	"sync"
 	"time"
@@ -17,6 +18,10 @@ type Fetcher struct {
 	source           string
 	concurrencyLimit int
 }
+
+var (
+	ErrNotFound = errors.New("xkcd: not found")
+)
 
 func NewFetcher(source string, concurrencyLimit int) *Fetcher {
 	return &Fetcher{
@@ -46,7 +51,7 @@ func (f *Fetcher) GetComics(ctx context.Context, ids []int) map[int]*FetchedComi
 			defer wg.Done()
 			defer sem.Release(1)
 
-			comic := f.Get(ctx, id)
+			comic, _ := f.Get(ctx, id)
 
 			if comic != nil {
 				mu.Lock()
@@ -61,24 +66,28 @@ func (f *Fetcher) GetComics(ctx context.Context, ids []int) map[int]*FetchedComi
 	return comics
 }
 
-func (f *Fetcher) Get(ctx context.Context, id int) *FetchedComic {
+func (f *Fetcher) Get(ctx context.Context, id int) (*FetchedComic, error) {
 	url := fmt.Sprintf("%s/%d/info.0.json", f.source, id)
 	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
 
 	if err != nil {
-		return nil
+		return nil, err
 	}
 
 	req.Header.Add("Accept", `application/json`)
 	resp, err := f.client.Do(req)
 
 	if err != nil {
-		return nil
+		return nil, err
+	}
+
+	if resp.StatusCode == http.StatusNotFound {
+		return nil, ErrNotFound
 	}
 
 	defer resp.Body.Close()
 
-	return parseJsonComic(resp.Body)
+	return parseJsonComic(resp.Body), nil
 }
 
 func (f *Fetcher) GetLastID(ctx context.Context) (int, error) {
@@ -124,7 +133,7 @@ func (f *Fetcher) GetAllComics(ctx context.Context, lastID int) map[int]*Fetched
 			defer sem.Release(1)
 			defer wg.Done()
 
-			comic := f.Get(ctx, id)
+			comic, _ := f.Get(ctx, id)
 
 			if comic != nil {
 				mu.Lock()
@@ -137,6 +146,49 @@ func (f *Fetcher) GetAllComics(ctx context.Context, lastID int) map[int]*Fetched
 	wg.Wait()
 
 	return comics
+}
+func (f *Fetcher) isComicPresent(ctx context.Context, id int) (bool, error) {
+	_, err := f.Get(ctx, id)
+	if err != nil {
+		if errors.Is(err, ErrNotFound) {
+			return false, nil
+		} else {
+			return false, err
+		}
+	}
+
+	return true, err
+}
+func (f *Fetcher) SearchLastID(ctx context.Context) (int, error) {
+	left, right := 1, math.MaxInt
+	leftPresent, err := f.isComicPresent(ctx, left)
+
+	if err != nil {
+		return 0, err
+	}
+
+	rightPresent, err := f.isComicPresent(ctx, right)
+
+	if err != nil {
+		return 0, err
+	}
+
+	for left+1 < right && leftPresent && !rightPresent {
+		pivot := left + (right-left)/2
+		pivotPresent, err := f.isComicPresent(ctx, pivot)
+
+		if err != nil {
+			return 0, err
+		}
+
+		if pivotPresent {
+			left = pivot
+		} else {
+			right = pivot
+		}
+	}
+
+	return left, nil
 }
 
 type FetchedComic struct {
