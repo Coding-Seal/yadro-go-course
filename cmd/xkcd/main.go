@@ -7,7 +7,7 @@ import (
 	"os"
 	"os/signal"
 	"yadro-go-course/internal/app"
-	"yadro-go-course/pkg/config"
+	"yadro-go-course/internal/config"
 	"yadro-go-course/pkg/words"
 )
 
@@ -50,7 +50,7 @@ func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer stop()
 
-	client := app.NewApp(conf.SourceURL, dbFile, stopWordsMap, conf.ConcurrencyLimit)
+	client := app.NewApp(conf.SourceURL, dbFile, stopWordsMap, conf.Parallel)
 
 	log.Println("loading comics from db")
 	client.LoadComics()
