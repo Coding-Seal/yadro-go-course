@@ -7,3 +7,7 @@ build:
 lint:
 	@echo Linting...
 	golangci-lint run --enable wsl
+.PHONY bench:
+bench:
+	@echo Running benchmark ...
+	go test -bench=. ./pkg/xkcd
