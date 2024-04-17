@@ -7,16 +7,16 @@ import (
 )
 
 type Config struct {
-	SourceURL        string `yaml:"source_url"`
-	DBfile           string `yaml:"db_file"`
-	ConcurrencyLimit int    `yaml:"concurrency_limit"`
+	SourceURL string `yaml:"source_url"`
+	DBfile    string `yaml:"db_file"`
+	Parallel  int    `yaml:"parallel"`
 }
 
 func NewConfig(configPath string) (*Config, error) {
 	config := &Config{
-		SourceURL:        "https://xkcd.com",
-		DBfile:           "database.json",
-		ConcurrencyLimit: 100,
+		SourceURL: "https://xkcd.com",
+		DBfile:    "database.json",
+		Parallel:  100, // провели эксперимент
 	}
 	file, err := os.Open(configPath)
 
