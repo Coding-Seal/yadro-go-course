@@ -72,19 +72,19 @@ func (f *Fetcher) Comic(ctx context.Context, id int) (*Comic, error) {
 	return parseJsonComic(resp.Body), nil
 }
 
-func (f *Fetcher) GetLastID(ctx context.Context) (int, error) {
+func (f *Fetcher) LastID(ctx context.Context) (int, error) {
 	url := fmt.Sprintf("%s/info.0.json", f.source)
 	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
 
 	if err != nil {
-		return 0, fmt.Errorf("GetLastID : %w", err)
+		return 0, fmt.Errorf("LastID : %w", err)
 	}
 
 	req.Header.Add("Accept", `application/json`)
 	resp, err := f.client.Do(req)
 
 	if err != nil {
-		return 0, fmt.Errorf("GetLastID : %w", err)
+		return 0, fmt.Errorf("LastID : %w", err)
 	}
 
 	defer resp.Body.Close()

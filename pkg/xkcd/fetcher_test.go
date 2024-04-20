@@ -13,7 +13,7 @@ const EPS = 0
 
 func BenchmarkFetcher_Comics(b *testing.B) {
 	fetcher := NewFetcher("https://xkcd.com", 0)
-	lastID, err := fetcher.GetLastID(context.Background())
+	lastID, err := fetcher.LastID(context.Background())
 
 	if err != nil {
 		b.Fatal(err)
@@ -53,7 +53,7 @@ func BenchmarkFetcher_Comics(b *testing.B) {
 
 func TestFetcher_SearchLastID(t *testing.T) {
 	fetcher := NewFetcher("https://xkcd.com", 0)
-	lastID, err := fetcher.GetLastID(context.Background())
+	lastID, err := fetcher.LastID(context.Background())
 
 	if err != nil {
 		t.Errorf("failed to get last id (lifehack) : %v", err)
