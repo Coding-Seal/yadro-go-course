@@ -53,7 +53,7 @@ func (a *App) FetchRemainingComics(ctx context.Context) error {
 		ids <- id
 	}
 	close(ids)
-	for i := 0; i < lastID; i++ {
+	for i := 0; i < len(missingComics); i++ {
 		fetchedComic := <-comics
 		if fetchedComic.Err() == nil {
 			a.comics[fetchedComic.Comic.ID] = a.toComic(fetchedComic.Comic)
@@ -63,7 +63,7 @@ func (a *App) FetchRemainingComics(ctx context.Context) error {
 }
 
 func (a *App) FetchLastComicID(ctx context.Context) (int, error) {
-	return a.fetcher.GetLastID(ctx)
+	return a.fetcher.LastID(ctx)
 }
 func (a *App) FetchAll(ctx context.Context) error {
 	lastID, err := a.FetchLastComicID(ctx)
