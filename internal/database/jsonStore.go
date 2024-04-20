@@ -7,7 +7,7 @@ import (
 	"io"
 	"log"
 	"os"
-	"yadro-go-course/pkg/comic"
+	"yadro-go-course/internal/comic"
 )
 
 type JsonDB struct {
