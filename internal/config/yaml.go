@@ -7,17 +7,20 @@ import (
 )
 
 type Config struct {
-	SourceURL string `yaml:"source_url"`
-	DBfile    string `yaml:"db_file"`
-	Parallel  int    `yaml:"parallel"`
+	SourceURL     string `yaml:"source_url"`
+	DBfile        string `yaml:"db_file"`
+	Parallel      int    `yaml:"parallel"`
+	StopWordsFile string `yaml:"stop_words_file"`
 }
 
 func NewConfig(configPath string) (*Config, error) {
 	config := &Config{
-		SourceURL: "https://xkcd.com",
-		DBfile:    "database.json",
-		Parallel:  100, // провели эксперимент
+		SourceURL:     "https://xkcd.com",
+		DBfile:        "database.json",
+		Parallel:      100, // провели эксперимент
+		StopWordsFile: "",
 	}
+
 	file, err := os.Open(configPath)
 
 	if err != nil {
