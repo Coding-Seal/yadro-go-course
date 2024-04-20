@@ -11,7 +11,7 @@ var concurrencyLimits = []int{50, 100, 200, 250, 300, 350, 400, 500, 750, 1000, 
 
 const EPS = 0
 
-func BenchmarkFetcher_GetAllComics(b *testing.B) {
+func BenchmarkFetcher_Comics(b *testing.B) {
 	fetcher := NewFetcher("https://xkcd.com", 0)
 	lastID, err := fetcher.GetLastID(context.Background())
 
@@ -21,51 +21,36 @@ func BenchmarkFetcher_GetAllComics(b *testing.B) {
 
 	b.ResetTimer()
 
+	numComics := 0
 	for _, limit := range concurrencyLimits {
 		fetcher.concurrencyLimit = limit
 
 		b.Run(fmt.Sprintf("cuncurrency_limit_%d", limit), func(b *testing.B) {
 			b.ResetTimer()
 
-			comics := fetcher.GetAllComics(context.Background(), lastID)
+			ids, comics := fetcher.Comics(context.Background(), lastID)
+			for id := 1; id <= lastID; id++ {
+				ids <- id
+			}
+			close(ids)
+
+			for i := 0; i < lastID; i++ {
+				fetchedComic := <-comics
+				if fetchedComic.Err() == nil {
+					numComics++
+				}
+			}
 
 			b.StopTimer()
 			time.Sleep(1 * time.Second)
 
-			if len(comics)+EPS < lastID-1 {
+			if numComics+EPS < lastID-1 {
 				b.Errorf(fmt.Sprintf("expected %d +- %d comics, got %d", lastID-1, EPS, len(comics)))
 			}
 		})
 	}
 }
 
-func BenchmarkFetcher_GetComics(b *testing.B) {
-	fetcher := NewFetcher("https://xkcd.com", 0)
-
-	comicsToFetch := make([]int, 0, 100)
-	for i := 1; i <= 100; i++ {
-		comicsToFetch = append(comicsToFetch, i)
-	}
-
-	b.ResetTimer()
-
-	for _, limit := range concurrencyLimits {
-		fetcher.concurrencyLimit = limit
-
-		b.Run(fmt.Sprintf("cuncurrency_limit_%d", limit), func(b *testing.B) {
-			b.ResetTimer()
-
-			comics := fetcher.GetComics(context.Background(), comicsToFetch)
-
-			b.StopTimer()
-			time.Sleep(1 * time.Second)
-
-			if len(comics)+EPS < len(comicsToFetch) {
-				b.Errorf(fmt.Sprintf("expected %d +- %d comics, got %d", len(comicsToFetch), EPS, len(comics)))
-			}
-		})
-	}
-}
 func TestFetcher_SearchLastID(t *testing.T) {
 	fetcher := NewFetcher("https://xkcd.com", 0)
 	lastID, err := fetcher.GetLastID(context.Background())

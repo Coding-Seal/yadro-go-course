@@ -5,12 +5,14 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"golang.org/x/sync/semaphore"
 	"io"
 	"math"
 	"net/http"
-	"sync"
 	"time"
+)
+
+var (
+	errNotFound = errors.New(http.StatusText(http.StatusNotFound))
 )
 
 type Fetcher struct {
@@ -18,10 +20,6 @@ type Fetcher struct {
 	source           string
 	concurrencyLimit int
 }
-
-var (
-	ErrNotFound = errors.New("xkcd: not found")
-)
 
 func NewFetcher(source string, concurrencyLimit int) *Fetcher {
 	return &Fetcher{
@@ -33,40 +31,25 @@ func NewFetcher(source string, concurrencyLimit int) *Fetcher {
 		concurrencyLimit: concurrencyLimit,
 	}
 }
-func (f *Fetcher) GetComics(ctx context.Context, ids []int) map[int]*FetchedComic {
-	wg := &sync.WaitGroup{}
-	mu := sync.Mutex{}
-	comics := make(map[int]*FetchedComic, len(ids))
-	sem := semaphore.NewWeighted(int64(f.concurrencyLimit))
 
-	for _, id := range ids {
-		err := sem.Acquire(ctx, 1)
-		if err != nil {
-			break
-		}
+func (f *Fetcher) Comics(ctx context.Context, numComics int) (chan<- int, <-chan FetchedComic) {
 
-		wg.Add(1)
+	jobs := make(chan int, numComics)
+	results := make(chan FetchedComic, numComics)
 
-		go func(id int) {
-			defer wg.Done()
-			defer sem.Release(1)
-
-			comic, _ := f.Get(ctx, id)
-
-			if comic != nil {
-				mu.Lock()
-				comics[id] = comic
-				mu.Unlock()
+	for w := 0; w <= f.concurrencyLimit; w++ {
+		go func() {
+			for id := range jobs {
+				comic, err := f.Comic(ctx, id)
+				results <- FetchedComic{comic, err}
 			}
-		}(id)
+		}()
 	}
 
-	wg.Wait()
-
-	return comics
+	return jobs, results
 }
 
-func (f *Fetcher) Get(ctx context.Context, id int) (*FetchedComic, error) {
+func (f *Fetcher) Comic(ctx context.Context, id int) (*Comic, error) {
 	url := fmt.Sprintf("%s/%d/info.0.json", f.source, id)
 	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
 
@@ -81,10 +64,9 @@ func (f *Fetcher) Get(ctx context.Context, id int) (*FetchedComic, error) {
 		return nil, err
 	}
 
-	if resp.StatusCode == http.StatusNotFound {
-		return nil, ErrNotFound
+	if resp.StatusCode != http.StatusOK {
+		return nil, errors.New(http.StatusText(resp.StatusCode))
 	}
-
 	defer resp.Body.Close()
 
 	return parseJsonComic(resp.Body), nil
@@ -115,49 +97,18 @@ func (f *Fetcher) GetLastID(ctx context.Context) (int, error) {
 	return fetched.ID, nil
 }
 
-func (f *Fetcher) GetAllComics(ctx context.Context, lastID int) map[int]*FetchedComic {
-	wg := &sync.WaitGroup{}
-	mu := sync.Mutex{}
-	sem := semaphore.NewWeighted(int64(f.concurrencyLimit))
-	comics := make(map[int]*FetchedComic, lastID)
-
-	for id := 1; id <= lastID; id++ {
-		wg.Add(1)
-
-		go func(id int) {
-			err := sem.Acquire(ctx, 1)
-			if err != nil {
-				return
-			}
-
-			defer sem.Release(1)
-			defer wg.Done()
-
-			comic, _ := f.Get(ctx, id)
-
-			if comic != nil {
-				mu.Lock()
-				comics[id] = comic
-				mu.Unlock()
-			}
-		}(id)
-	}
-
-	wg.Wait()
-
-	return comics
-}
 func (f *Fetcher) isComicPresent(ctx context.Context, id int) (bool, error) {
-	_, err := f.Get(ctx, id)
+	_, err := f.Comic(ctx, id)
+
 	if err != nil {
-		if errors.Is(err, ErrNotFound) {
+		if errors.Is(err, errNotFound) {
 			return false, nil
 		} else {
 			return false, err
 		}
 	}
 
-	return true, err
+	return true, nil
 }
 func (f *Fetcher) SearchLastID(ctx context.Context) (int, error) {
 	left, right := 1, math.MaxInt
@@ -191,16 +142,37 @@ func (f *Fetcher) SearchLastID(ctx context.Context) (int, error) {
 	return left, nil
 }
 
-type FetchedComic struct {
-	ID               int    `json:"num"`
-	ImgURL           string `json:"img"`
-	Title            string `json:"title"`
-	Transcription    string `json:"transcript"`
-	AltTranscription string `json:"alt"`
+type ParsedComic struct {
+	Day              int        `json:"day,string"`
+	Month            time.Month `json:"month,string"`
+	Year             int        `json:"year,string"`
+	ID               int        `json:"num"`
+	News             string     `json:"news"`
+	SafeTitle        string     `json:"safe_title"`
+	ImgURL           string     `json:"img"`
+	Title            string     `json:"title"`
+	Transcription    string     `json:"transcript"`
+	AltTranscription string     `json:"alt"`
+	Link             string     `json:"link"`
 }
 
-func parseJsonComic(r io.Reader) *FetchedComic {
-	var dto FetchedComic
+func (c *ParsedComic) toComic() *Comic {
+	return &Comic{
+		ID:               c.ID,
+		Date:             time.Date(c.Year, c.Month, c.Day, 0, 0, 0, 0, time.UTC),
+		News:             c.News,
+		SafeTitle:        c.SafeTitle,
+		ImgURL:           c.ImgURL,
+		Title:            c.Title,
+		Transcription:    c.Transcription,
+		AltTranscription: c.AltTranscription,
+		Link:             c.Link,
+	}
+
+}
+
+func parseJsonComic(r io.Reader) *Comic {
+	var dto ParsedComic
 
 	decoder := json.NewDecoder(r)
 	err := decoder.Decode(&dto)
@@ -209,5 +181,14 @@ func parseJsonComic(r io.Reader) *FetchedComic {
 		return nil
 	}
 
-	return &dto
+	return dto.toComic()
+}
+
+type FetchedComic struct {
+	Comic *Comic
+	err   error
+}
+
+func (c FetchedComic) Err() error {
+	return c.err
 }
