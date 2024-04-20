@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"maps"
 	"os"
-	"yadro-go-course/pkg/comic"
-	"yadro-go-course/pkg/database"
+	"yadro-go-course/internal/comic"
+	"yadro-go-course/internal/database"
 	"yadro-go-course/pkg/words"
 	"yadro-go-course/pkg/xkcd"
 )
@@ -47,14 +47,18 @@ func (a *App) FetchRemainingComics(ctx context.Context) error {
 			missingComics = append(missingComics, id)
 		}
 	}
+	ids, comics := a.fetcher.Comics(ctx, len(missingComics))
 
-	for _, fetchedComic := range a.fetcher.GetComics(ctx, missingComics) {
-		if fetchedComic != nil {
-			id, conv := a.toComic(fetchedComic)
-			a.comics[id] = conv
+	for _, id := range missingComics {
+		ids <- id
+	}
+	close(ids)
+	for i := 0; i < lastID; i++ {
+		fetchedComic := <-comics
+		if fetchedComic.Err() == nil {
+			a.comics[fetchedComic.Comic.ID] = a.toComic(fetchedComic.Comic)
 		}
 	}
-
 	return nil
 }
 
@@ -67,14 +71,19 @@ func (a *App) FetchAll(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+	ids, comics := a.fetcher.Comics(ctx, lastID)
 
-	for _, fetchedComic := range a.fetcher.GetAllComics(ctx, lastID) {
-		if fetchedComic != nil {
-			id, conv := a.toComic(fetchedComic)
-			a.comics[id] = conv
+	for id := 1; id <= lastID; id++ {
+		ids <- id
+	}
+	close(ids)
+
+	for i := 0; i < lastID; i++ {
+		fetchedComic := <-comics
+		if fetchedComic.Err() == nil {
+			a.comics[fetchedComic.Comic.ID] = a.toComic(fetchedComic.Comic)
 		}
 	}
-
 	return nil
 }
 
@@ -96,13 +105,9 @@ func (a *App) PrintAllComics() {
 		fmt.Printf("ID=%d ImgURl=%s Keywords=%v\n", id, c.ImgURL, c.Keywords)
 	}
 }
-func (a *App) toComic(f *xkcd.FetchedComic) (int, *comic.Comic) {
-	if f == nil {
-		return 0, nil
-	}
-
-	return f.ID, &comic.Comic{
-		ImgURL:   f.ImgURL,
-		Keywords: a.stemmer.Stem(words.ParsePhrase(f.Title + " " + f.AltTranscription + " " + f.Transcription)),
+func (a *App) toComic(c *xkcd.Comic) *comic.Comic {
+	return &comic.Comic{
+		ImgURL:   c.ImgURL,
+		Keywords: a.stemmer.Stem(words.ParsePhrase(c.Title + " " + c.AltTranscription + " " + c.Transcription + " " + c.News)),
 	}
 }
