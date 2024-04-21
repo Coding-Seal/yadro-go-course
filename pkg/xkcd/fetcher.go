@@ -33,7 +33,6 @@ func NewFetcher(source string, concurrencyLimit int) *Fetcher {
 }
 
 func (f *Fetcher) Comics(ctx context.Context, numComics int) (chan<- int, <-chan FetchedComic) {
-
 	jobs := make(chan int, numComics)
 	results := make(chan FetchedComic, numComics)
 
@@ -168,7 +167,6 @@ func (c *ParsedComic) toComic() *Comic {
 		AltTranscription: c.AltTranscription,
 		Link:             c.Link,
 	}
-
 }
 
 func parseJsonComic(r io.Reader) *Comic {
