@@ -12,14 +12,15 @@ import (
 var nonWordSymbolRegexp = regexp.MustCompile("[^0-9A-Za-z_]+")
 
 type Stemmer struct {
-	stopWords map[string]struct{}
+	stopWords  map[string]struct{}
+	leaveWords int
 }
 
 // NewStemmer is a function to construct new Stemmer.
 // If stopWords == nil uses default dictionary https://www.ranks.nl/stopwords
-func NewStemmer(stopWords map[string]struct{}) *Stemmer {
+func NewStemmer(stopWords map[string]struct{}, leaveWords int) *Stemmer {
 	if stopWords != nil {
-		return &Stemmer{stopWords: stopWords}
+		return &Stemmer{stopWords: stopWords, leaveWords: leaveWords}
 	}
 
 	return &Stemmer{stopWords: map[string]struct{}{
@@ -47,7 +48,7 @@ func NewStemmer(stopWords map[string]struct{}) *Stemmer {
 		"which": {}, "while": {}, "who": {}, "who's": {}, "whom": {}, "why": {}, "why's": {},
 		"with": {}, "won't": {}, "would": {}, "wouldn't": {}, "you": {}, "you'd": {}, "you'll": {},
 		"you're": {}, "you've": {}, "your": {}, "yours": {}, "yourself": {}, "yourselves": {},
-		"alt": {}, "text": {}, "title": {}}}
+		"alt": {}, "text": {}, "title": {}}, leaveWords: leaveWords}
 }
 
 func ParseStopWords(reader io.Reader) map[string]struct{} {
@@ -93,26 +94,51 @@ func (s *Stemmer) isStopWord(word string) bool {
 }
 func (s *Stemmer) Stem(words []string) []string {
 	// using map to avoid duplicates
-	stemmed := make(map[string]struct{})
+	stemmed := make(map[string]int)
 
 	for _, word := range words {
-		if len(word) < 5 || s.isStopWord(word) {
+		if len(word) < 4 || s.isStopWord(word) {
 			continue
 		} else {
 			word, _ = snowball.Stem(word, "english", false)
-			if len(word) < 5 {
+			if len(word) < 3 {
 				continue
 			}
 
-			stemmed[word] = struct{}{}
+			stemmed[word] += 1
 		}
 	}
-	// transform map into slice
-	keys := make([]string, 0, len(stemmed))
 
-	for k := range stemmed {
-		keys = append(keys, k)
+	type pair struct {
+		word  string
+		count int
+	}
+	// transform map into slice
+	pairs := make([]pair, 0, len(stemmed))
+
+	for k, v := range stemmed {
+		pairs = append(pairs, pair{word: k, count: v})
 	}
 
-	return keys
+	slices.SortFunc(pairs, func(a, b pair) int {
+		if b.count == a.count {
+			if b.word < a.word {
+				return 1
+			} else if b.word > a.word {
+				return -1
+			} else {
+				return 0
+			}
+		}
+
+		return b.count - a.count
+	})
+
+	res := make([]string, min(s.leaveWords, len(pairs)))
+
+	for i := 0; i < min(s.leaveWords, len(pairs)); i++ {
+		res[i] = pairs[i].word
+	}
+
+	return res
 }
