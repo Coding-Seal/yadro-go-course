@@ -1,6 +1,11 @@
 package comic
 
+import "time"
+
 type Comic struct {
-	ImgURL   string   `json:"url"`
-	Keywords []string `json:"keywords"`
+	ID       int       `json:"id"`
+	Title    string    `json:"title"`
+	Date     time.Time `json:"date"`
+	ImgURL   string    `json:"img_url"`
+	Keywords []string  `json:"keywords"`
 }
