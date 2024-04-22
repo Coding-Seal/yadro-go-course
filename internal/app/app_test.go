@@ -9,7 +9,7 @@ import (
 
 var phrase = "I'm following your questions"
 var sourceURL = "https://xkcd.com"
-var dbPath = "../../somefile.json"
+var dbPath = "../../somefile.jsonl"
 var stopWordsPath = "../../stopwords.txt"
 var parallelLimit = 100
 

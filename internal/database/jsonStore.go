@@ -1,13 +1,9 @@
 package database
 
 import (
-	"encoding/json"
-	"errors"
-	"fmt"
-	"io"
-	"log"
 	"os"
 	"yadro-go-course/internal/comic"
+	"yadro-go-course/pkg/jsonl"
 )
 
 type JsonDB struct {
@@ -20,28 +16,39 @@ func NewJsonDB(file *os.File) *JsonDB {
 	}
 }
 
-func (db *JsonDB) Save(comics map[int]*comic.Comic) {
-	_ = db.file.Truncate(0)
-	_, _ = db.file.Seek(0, 0)
-	encoder := json.NewEncoder(db.file)
-	err := encoder.Encode(comics)
-
-	if err != nil {
-		log.Println(fmt.Errorf("error while saving comics: %w", err))
+func (db *JsonDB) SaveAll(comics map[int]*comic.Comic) error {
+	if err := db.file.Truncate(0); err != nil {
+		return err
 	}
-}
-func (db *JsonDB) Read() map[int]*comic.Comic {
-	comics := make(map[int]*comic.Comic)
-	decoder := json.NewDecoder(db.file)
-	err := decoder.Decode(&comics)
+	if _, err := db.file.Seek(0, 0); err != nil {
+		return err
+	}
 
-	if err != nil {
-		if errors.Is(err, io.EOF) {
-			return comics
+	wr := jsonl.NewWriter(db.file)
+	for _, c := range comics {
+		if err := wr.WriteJson(c); err != nil {
+			return err
 		}
-
-		log.Println(fmt.Errorf("error while loading comics: %w", err))
 	}
+	return wr.Flush()
+}
+func (db *JsonDB) Save(c *comic.Comic) error {
+	wr := jsonl.NewWriter(db.file)
+	if err := wr.WriteJson(c); err != nil {
+		return err
+	}
+	return wr.Flush()
+}
+func (db *JsonDB) Read() (map[int]*comic.Comic, error) {
+	comics := make(map[int]*comic.Comic)
+	sc := jsonl.NewScanner(db.file)
 
-	return comics
+	for sc.Scan() {
+		var readComic comic.Comic
+		if err := sc.Json(&readComic); err != nil {
+			return nil, err
+		}
+		comics[readComic.ID] = &readComic
+	}
+	return comics, nil
 }

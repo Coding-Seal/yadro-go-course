@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"fmt"
+	"log"
 	"maps"
 	"os"
 	"slices"
@@ -30,10 +31,17 @@ func NewApp(sourceURL string, file *os.File, stopWords map[string]struct{}, conc
 }
 
 func (a *App) LoadComics() {
-	maps.Copy(a.comics, a.db.Read())
+	comics, err := a.db.Read()
+	if err != nil {
+		log.Println("error loading comics: ", err)
+	}
+	maps.Copy(a.comics, comics)
 }
 func (a *App) SaveComics() {
-	a.db.Save(a.comics)
+	err := a.db.SaveAll(a.comics)
+	if err != nil {
+		log.Println("error saving comics: ", err)
+	}
 }
 func (a *App) FetchRemainingComics(ctx context.Context) error {
 	var missingComics []int
@@ -59,9 +67,15 @@ func (a *App) FetchRemainingComics(ctx context.Context) error {
 	close(ids)
 
 	for i := 0; i < len(missingComics); i++ {
-		fetchedComic := <-comics
-		if fetchedComic.Err() == nil {
-			a.comics[fetchedComic.Comic.ID] = a.toComic(fetchedComic.Comic)
+		fetchedComic, ok := <-comics
+		if fetchedComic.Err() == nil && ok {
+			c := a.toComic(fetchedComic.Comic)
+
+			a.comics[fetchedComic.Comic.ID] = c
+
+			if err := a.db.Save(c); err != nil {
+				log.Println("error appending comic: ", err)
+			}
 		}
 	}
 
@@ -86,8 +100,8 @@ func (a *App) FetchAll(ctx context.Context) error {
 	close(ids)
 
 	for i := 0; i < lastID; i++ {
-		fetchedComic := <-comics
-		if fetchedComic.Err() == nil {
+		fetchedComic, ok := <-comics
+		if fetchedComic.Err() == nil && ok {
 			a.comics[fetchedComic.Comic.ID] = a.toComic(fetchedComic.Comic)
 		}
 	}
@@ -115,6 +129,9 @@ func (a *App) PrintAllComics() {
 }
 func (a *App) toComic(c *xkcd.Comic) *comic.Comic {
 	return &comic.Comic{
+		ID:       c.ID,
+		Title:    c.Title,
+		Date:     c.Date,
 		ImgURL:   c.ImgURL,
 		Keywords: a.stemmer.Stem(words.ParsePhrase(c.Title + " " + c.AltTranscription + " " + c.Transcription + " " + c.News)),
 	}

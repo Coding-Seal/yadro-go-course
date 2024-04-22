@@ -3,21 +3,35 @@ package main
 import (
 	"context"
 	"flag"
+	"fmt"
 	"log"
 	"os"
 	"os/signal"
 	"yadro-go-course/internal/app"
+	"yadro-go-course/internal/comic"
 	"yadro-go-course/internal/config"
 	"yadro-go-course/pkg/words"
 )
 
 func main() {
-
 	var configName string
 
-	flag.StringVar(&configName, "c", "config.yaml", "Path to config file")
+	var searchPhrase string
 
+	var useIndex bool
+
+	var numComics int
+
+	flag.StringVar(&configName, "c", "config.yaml", "Path to config file")
+	flag.StringVar(&searchPhrase, "s", "", "Search words")
+	flag.BoolVar(&useIndex, "i", false, "Use index")
+	flag.IntVar(&numComics, "n", 10, "Number of comics to print")
 	flag.Parse()
+
+	searchPhrase = "I'm following your questions"
+	if searchPhrase == "" {
+		log.Fatalln("No search phrase provided")
+	}
 
 	cfg, err := config.NewConfig(configName)
 	if err != nil {
@@ -33,14 +47,15 @@ func main() {
 	defer dbFile.Close()
 
 	var stopWordsMap map[string]struct{}
+
 	if cfg.StopWordsFile != "" {
 		stopWordsFile, err := os.Open(cfg.StopWordsFile)
 
 		if err != nil {
 			log.Fatalln("Could not open stop words file", err)
 		}
-		defer stopWordsFile.Close()
 
+		defer stopWordsFile.Close()
 		stopWordsMap = words.ParseStopWords(stopWordsFile)
 	}
 
@@ -61,7 +76,20 @@ func main() {
 	}
 
 	log.Println("saving comics in DB")
-	client.SaveComics()
+	//client.SaveComics()
+
+	var foundComics []*comic.Comic
+
+	if useIndex {
+		client.BuildIndex()
+		foundComics = client.SearchIndex(searchPhrase)
+	} else {
+		foundComics = client.SearchComics(searchPhrase)
+	}
+
+	for i := 0; i < min(numComics, len(foundComics)); i++ {
+		fmt.Println(foundComics[i].ImgURL)
+	}
 
 	log.Println("Done")
 }
