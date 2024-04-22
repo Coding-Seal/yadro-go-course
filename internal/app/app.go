@@ -32,9 +32,11 @@ func NewApp(sourceURL string, file *os.File, stopWords map[string]struct{}, conc
 
 func (a *App) LoadComics() {
 	comics, err := a.db.Read()
+
 	if err != nil {
 		log.Println("error loading comics: ", err)
 	}
+
 	maps.Copy(a.comics, comics)
 }
 func (a *App) SaveComics() {

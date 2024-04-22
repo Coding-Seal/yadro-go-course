@@ -20,6 +20,7 @@ func (db *JsonDB) SaveAll(comics map[int]*comic.Comic) error {
 	if err := db.file.Truncate(0); err != nil {
 		return err
 	}
+
 	if _, err := db.file.Seek(0, 0); err != nil {
 		return err
 	}
@@ -30,6 +31,7 @@ func (db *JsonDB) SaveAll(comics map[int]*comic.Comic) error {
 			return err
 		}
 	}
+
 	return wr.Flush()
 }
 func (db *JsonDB) Save(c *comic.Comic) error {
@@ -37,6 +39,7 @@ func (db *JsonDB) Save(c *comic.Comic) error {
 	if err := wr.WriteJson(c); err != nil {
 		return err
 	}
+
 	return wr.Flush()
 }
 func (db *JsonDB) Read() (map[int]*comic.Comic, error) {
@@ -45,10 +48,13 @@ func (db *JsonDB) Read() (map[int]*comic.Comic, error) {
 
 	for sc.Scan() {
 		var readComic comic.Comic
+
 		if err := sc.Json(&readComic); err != nil {
 			return nil, err
 		}
+
 		comics[readComic.ID] = &readComic
 	}
+
 	return comics, nil
 }
