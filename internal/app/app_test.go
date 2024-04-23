@@ -2,7 +2,6 @@ package app
 
 import (
 	"os"
-	"slices"
 	"testing"
 	"yadro-go-course/pkg/words"
 )
@@ -34,7 +33,11 @@ func BenchmarkApp_SearchComics(b *testing.B) {
 	stopWordsMap := words.ParseStopWords(stopWordsFile)
 
 	client := NewApp(sourceURL, dbFile, stopWordsMap, parallelLimit)
-	client.LoadComics()
+	if err := client.LoadComics(); err != nil {
+		b.Error("Could not parse comics", err)
+		b.FailNow()
+	}
+
 	b.ResetTimer()
 	client.SearchComics(phrase)
 }
@@ -60,7 +63,10 @@ func BenchmarkApp_SearchIndex(b *testing.B) {
 	stopWordsMap := words.ParseStopWords(stopWordsFile)
 
 	client := NewApp(sourceURL, dbFile, stopWordsMap, parallelLimit)
-	client.LoadComics()
+	if err := client.LoadComics(); err != nil {
+		b.Error("Could not parse comics", err)
+		b.FailNow()
+	}
 
 	client.BuildIndex()
 	b.ResetTimer()
@@ -87,7 +93,11 @@ func BenchmarkApp_BuildIndex(b *testing.B) {
 	stopWordsMap := words.ParseStopWords(stopWordsFile)
 
 	client := NewApp(sourceURL, dbFile, stopWordsMap, parallelLimit)
-	client.LoadComics()
+	if err := client.LoadComics(); err != nil {
+		b.Error("Could not parse comics", err)
+		b.FailNow()
+	}
+
 	b.ResetTimer()
 	client.BuildIndex()
 }
@@ -116,7 +126,10 @@ func BenchmarkApp_LoadComics(b *testing.B) {
 	client := NewApp(sourceURL, dbFile, stopWordsMap, parallelLimit)
 
 	b.StartTimer()
-	client.LoadComics()
+
+	if err := client.LoadComics(); err != nil {
+		b.Error("Could not parse comics", err)
+	}
 }
 
 func TestApp_SearchComics(t *testing.T) {
@@ -140,22 +153,37 @@ func TestApp_SearchComics(t *testing.T) {
 	stopWordsMap := words.ParseStopWords(stopWordsFile)
 
 	client := NewApp(sourceURL, dbFile, stopWordsMap, parallelLimit)
-	client.LoadComics()
+	if err := client.LoadComics(); err != nil {
+		t.Error("Could not parse comics", err)
+		t.FailNow()
+	}
 
 	client.BuildIndex()
 
 	indexFound := client.SearchIndex(phrase)
 	mapFound := client.SearchComics(phrase)
 
-	for _, foundComic := range mapFound {
-		if !slices.Contains(indexFound, foundComic) {
-			t.Errorf("Not comics %v in %v", foundComic, indexFound)
+	for foundComic, score := range mapFound {
+		sc, ok := indexFound[foundComic]
+
+		if !ok {
+			t.Errorf("No comic %v in %v", foundComic, indexFound)
+		}
+
+		if sc != score {
+			t.Errorf("score should be the same %d != %d, comic %v", sc, score, foundComic)
 		}
 	}
 
-	for _, foundComic := range indexFound {
-		if !slices.Contains(mapFound, foundComic) {
-			t.Errorf("Not comics %v in %v", foundComic, mapFound)
+	for foundComic, score := range indexFound {
+		sc, ok := mapFound[foundComic]
+
+		if !ok {
+			t.Errorf("No comic %v in %v", foundComic, mapFound)
+		}
+
+		if sc != score {
+			t.Errorf("score should be the same %d != %d, comic %v", sc, score, foundComic)
 		}
 	}
 }

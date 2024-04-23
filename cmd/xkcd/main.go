@@ -3,10 +3,10 @@ package main
 import (
 	"context"
 	"flag"
-	"fmt"
 	"log"
 	"os"
 	"os/signal"
+	"slices"
 	"yadro-go-course/internal/app"
 	"yadro-go-course/internal/comic"
 	"yadro-go-course/internal/config"
@@ -64,7 +64,10 @@ func main() {
 	client := app.NewApp(cfg.SourceURL, dbFile, stopWordsMap, cfg.Parallel)
 
 	log.Println("loading comics from db")
-	client.LoadComics()
+
+	if err := client.LoadComics(); err != nil {
+		log.Println("Could not load comics:", err)
+	}
 
 	log.Println("downloading remaining comics")
 
@@ -77,7 +80,7 @@ func main() {
 	log.Println("saving comics in DB")
 	//client.SaveComics()
 
-	var foundComics []*comic.Comic
+	var foundComics map[*comic.Comic]int
 
 	if useIndex {
 		client.BuildIndex()
@@ -86,8 +89,34 @@ func main() {
 		foundComics = client.SearchComics(searchPhrase)
 	}
 
-	for i := 0; i < min(numComics, len(foundComics)); i++ {
-		fmt.Println(foundComics[i].ImgURL)
+	type pair struct {
+		comic *comic.Comic
+		score int
+	}
+
+	foundComicsSorted := make([]pair, 0, len(foundComics))
+
+	for c, score := range foundComics {
+		foundComicsSorted = append(foundComicsSorted, pair{comic: c, score: score})
+	}
+
+	slices.SortFunc(foundComicsSorted, func(a, b pair) int {
+		if a.score == b.score {
+			if a.comic.Title < b.comic.Title {
+				return -1
+			} else if a.comic.Title > b.comic.Title {
+				return 1
+			} else {
+				return 0
+			}
+		}
+
+		return b.score - a.score
+	})
+
+	for i := 0; i < numComics; i++ {
+		log.Println(foundComicsSorted[i].comic.Title, foundComicsSorted[i].comic.ImgURL,
+			"score:", foundComicsSorted[i].score)
 	}
 
 	log.Println("Done")
