@@ -12,7 +12,7 @@ import (
 )
 
 var (
-	errNotFound = errors.New(http.StatusText(http.StatusNotFound))
+	ErrNotFound = errors.New(http.StatusText(http.StatusNotFound))
 )
 
 type Fetcher struct {
@@ -64,6 +64,10 @@ func (f *Fetcher) Comic(ctx context.Context, id int) (*Comic, error) {
 	}
 
 	if resp.StatusCode != http.StatusOK {
+		if resp.StatusCode == http.StatusNotFound {
+			return nil, ErrNotFound
+		}
+
 		return nil, errors.New(http.StatusText(resp.StatusCode))
 	}
 	defer resp.Body.Close()
@@ -100,7 +104,7 @@ func (f *Fetcher) isComicPresent(ctx context.Context, id int) (bool, error) {
 	_, err := f.Comic(ctx, id)
 
 	if err != nil {
-		if errors.Is(err, errNotFound) {
+		if errors.Is(err, ErrNotFound) {
 			return false, nil
 		} else {
 			return false, err

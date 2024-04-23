@@ -28,7 +28,6 @@ func main() {
 	flag.IntVar(&numComics, "n", 10, "Number of comics to print")
 	flag.Parse()
 
-	searchPhrase = "I'm following your questions"
 	if searchPhrase == "" {
 		log.Fatalln("No search phrase provided")
 	}

@@ -27,7 +27,7 @@ func TestWriter_WriteJson(t *testing.T) {
 		t.Error(err)
 	}
 
-	if bytes.Equal(buf.Bytes(), []byte(testString)) {
+	if !bytes.Equal(buf.Bytes(), []byte(testString)) {
 		t.Errorf("%s != %s", buf.Bytes(), []byte(testString))
 	}
 }
