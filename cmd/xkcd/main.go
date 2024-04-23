@@ -114,7 +114,7 @@ func main() {
 		return b.score - a.score
 	})
 
-	for i := 0; i < numComics; i++ {
+	for i := 0; i < min(numComics, len(foundComicsSorted)); i++ {
 		log.Println(foundComicsSorted[i].comic.Title, foundComicsSorted[i].comic.ImgURL,
 			"score:", foundComicsSorted[i].score)
 	}
