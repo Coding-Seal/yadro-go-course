@@ -16,7 +16,7 @@ type Config struct {
 func NewConfig(configPath string) (*Config, error) {
 	config := &Config{
 		SourceURL:     "https://xkcd.com",
-		DBfile:        "database.json",
+		DBfile:        "database.jsonl",
 		Parallel:      100, // провели эксперимент
 		StopWordsFile: "",
 	}

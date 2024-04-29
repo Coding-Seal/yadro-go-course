@@ -2,11 +2,11 @@
 build:
 	@echo Building...
 	go mod tidy
-	go build -o myapp ./cmd/xkcd
+	go build -o xkcd ./cmd/xkcd
 .PHONY lint:
 lint:
 	@echo Linting...
-	golangci-lint run --enable wsl
+	golangci-lint run
 .PHONY bench:
 bench:
 	@echo Running benchmark ...
@@ -15,4 +15,8 @@ bench:
 test:
 	@echo Running benchmark ...
 	go test ./...
+.PHONY lint-strict:
+lint-strict:
+	@echo Linting...
+	golangci-lint run --enable wsl
 

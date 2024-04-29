@@ -1,4 +1,4 @@
 source_url: https://xkcd.com
-db_file: somefile.json
+db_file: somefile.jsonl
 parallel: 100
 stop_words_file: stopwords.txt

@@ -91,28 +91,22 @@ func (s *Stemmer) isStopWord(word string) bool {
 	_, ok := s.stopWords[word]
 	return ok
 }
-func (s *Stemmer) Stem(words []string) []string {
+func (s *Stemmer) Stem(words []string) map[string]int {
 	// using map to avoid duplicates
-	stemmed := make(map[string]struct{})
+	stemmed := make(map[string]int)
 
 	for _, word := range words {
-		if len(word) < 5 || s.isStopWord(word) {
+		if len(word) < 4 || s.isStopWord(word) {
 			continue
 		} else {
 			word, _ = snowball.Stem(word, "english", false)
-			if len(word) < 5 {
+			if len(word) < 3 {
 				continue
 			}
 
-			stemmed[word] = struct{}{}
+			stemmed[word] += 1
 		}
 	}
-	// transform map into slice
-	keys := make([]string, 0, len(stemmed))
 
-	for k := range stemmed {
-		keys = append(keys, k)
-	}
-
-	return keys
+	return stemmed
 }

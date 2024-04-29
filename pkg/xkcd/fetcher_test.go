@@ -22,6 +22,7 @@ func BenchmarkFetcher_Comics(b *testing.B) {
 	b.ResetTimer()
 
 	numComics := 0
+
 	for _, limit := range concurrencyLimits {
 		fetcher.concurrencyLimit = limit
 
