@@ -39,7 +39,9 @@ func BenchmarkApp_SearchComics(b *testing.B) {
 	}
 
 	b.ResetTimer()
-	client.SearchComics(phrase)
+	for i := 0; i < b.N; i++ {
+		client.SearchComics(phrase)
+	}
 }
 
 func BenchmarkApp_SearchIndex(b *testing.B) {
@@ -70,7 +72,9 @@ func BenchmarkApp_SearchIndex(b *testing.B) {
 
 	client.BuildIndex()
 	b.ResetTimer()
-	client.SearchIndex(phrase)
+	for i := 0; i < b.N; i++ {
+		client.SearchIndex(phrase)
+	}
 }
 func BenchmarkApp_BuildIndex(b *testing.B) {
 	dbFile, err := os.OpenFile(dbPath, os.O_RDWR|os.O_CREATE, 0755)
@@ -99,7 +103,9 @@ func BenchmarkApp_BuildIndex(b *testing.B) {
 	}
 
 	b.ResetTimer()
-	client.BuildIndex()
+	for i := 0; i < b.N; i++ {
+		client.BuildIndex()
+	}
 }
 func BenchmarkApp_LoadComics(b *testing.B) {
 	dbFile, err := os.OpenFile(dbPath, os.O_RDWR|os.O_CREATE, 0755)
@@ -126,9 +132,10 @@ func BenchmarkApp_LoadComics(b *testing.B) {
 	client := NewApp(sourceURL, dbFile, stopWordsMap, parallelLimit)
 
 	b.StartTimer()
-
-	if err := client.LoadComics(); err != nil {
-		b.Error("Could not parse comics", err)
+	for i := 0; i < b.N; i++ {
+		if err := client.LoadComics(); err != nil {
+			b.Error("Could not parse comics", err)
+		}
 	}
 }
 
