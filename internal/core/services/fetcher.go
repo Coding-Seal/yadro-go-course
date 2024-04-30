@@ -12,19 +12,19 @@ type Fetcher struct {
 }
 
 func (f *Fetcher) Update(ctx context.Context) error { // TODO: revisit
-	last, err := f.fetcher.LastComic(ctx)
+	lastID, err := f.fetcher.LastComicID(ctx)
 	if err != nil {
 		return err
 	}
 	var missing []int
-	for i := 1; i <= last.ID; i++ {
+	for i := 1; i <= lastID; i++ {
 		comic, err := f.repo.Comic(ctx, i)
 		if err != nil {
 			return err
 		}
 		missing = append(missing, comic.ID)
 	}
-	ids, res := f.fetcher.Comics(ctx, last.ID)
+	ids, res := f.fetcher.Comics(ctx, lastID)
 	for _, id := range missing {
 		ids <- id
 	}
