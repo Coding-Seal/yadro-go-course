@@ -1,7 +1,7 @@
 package app
 
 import (
-	"yadro-go-course/internal/comic"
+	"yadro-go-course/internal/core/models"
 	"yadro-go-course/pkg/words"
 	"yadro-go-course/pkg/xkcd"
 )
@@ -10,8 +10,8 @@ func giveWordScore(inPhrase, inKeywords int) int {
 	return min(inPhrase*inKeywords, 3)
 }
 
-func (a *App) toComic(c *xkcd.Comic) *comic.Comic {
-	return &comic.Comic{
+func (a *App) toComic(c *xkcd.Comic) *models.Comic {
+	return &models.Comic{
 		ID:       c.ID,
 		Title:    c.Title,
 		Date:     c.Date,
@@ -19,9 +19,9 @@ func (a *App) toComic(c *xkcd.Comic) *comic.Comic {
 		Keywords: a.stemmer.Stem(words.ParsePhrase(c.Title + " " + c.AltTranscription + " " + c.Transcription + " " + c.News)),
 	}
 }
-func (a *App) SearchComics(searchPhrase string) map[*comic.Comic]int {
+func (a *App) SearchComics(searchPhrase string) map[*models.Comic]int {
 	searchWords := a.stemmer.Stem(words.ParsePhrase(searchPhrase))
-	res := make(map[*comic.Comic]int, 0)
+	res := make(map[*models.Comic]int, 0)
 
 	for _, c := range a.comics {
 		score := 0
@@ -44,9 +44,9 @@ func (a *App) BuildIndex() {
 		}
 	}
 }
-func (a *App) SearchIndex(searchPhrase string) map[*comic.Comic]int {
+func (a *App) SearchIndex(searchPhrase string) map[*models.Comic]int {
 	searchWords := a.stemmer.Stem(words.ParsePhrase(searchPhrase))
-	foundComics := make(map[*comic.Comic]int)
+	foundComics := make(map[*models.Comic]int)
 
 	for word, num := range searchWords {
 		for _, id := range a.index[word] {

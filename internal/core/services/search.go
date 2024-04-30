@@ -8,14 +8,12 @@ import (
 )
 
 type Search struct { // TODO: add logging
-	repo ports.SearchComicsRepo
+	repo   ports.SearchComicsRepo
+	comics ports.ComicsRepo
 }
 
-func (s *Search) SearchComics(ctx context.Context, query string, limit int) ([]int, error) {
-	scored, err := s.repo.SearchComics(ctx, query)
-	if err != nil {
-		return nil, err
-	}
+func (s *Search) SearchComics(ctx context.Context, query string, limit int) []models.Comic {
+	scored := s.repo.SearchComics(ctx, query)
 	limit = min(limit, len(scored))
 	found := make([]int, 0, limit)
 	i := 0
@@ -35,11 +33,16 @@ func (s *Search) SearchComics(ctx context.Context, query string, limit int) ([]i
 			return 1
 		}
 	})
+	result := make([]models.Comic, 0, limit)
+	for _, id := range found {
+		comic, err := s.comics.Comic(ctx, id)
+		if err != nil {
 
-	return found, nil
+		}
+		result = append(result, comic)
+	}
+	return result
 }
-func (s *Search) AddComic(ctx context.Context, comic models.Comic) error {
-	return s.repo.AddComic(ctx, comic)
+func (s *Search) AddComic(ctx context.Context, comic models.Comic) {
+	s.repo.AddComic(ctx, comic)
 }
-
-var _ ports.SearchComicsService = (*Search)(nil)

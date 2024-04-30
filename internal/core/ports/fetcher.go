@@ -7,11 +7,10 @@ import (
 
 type (
 	ComicFetcherRepo interface {
-		LastComic(ctx context.Context) (models.Comic, error)
+		LastComicID(ctx context.Context) (int, error)
 		Comics(ctx context.Context, limit int) (chan<- int, <-chan models.Comic)
 	}
-	ComicFetcherService interface {
-		FetchRemainingComics(ctx context.Context) ([]models.Comic, error)
+	/*	ComicFetcherService interface {
 		Update(ctx context.Context) error
-	}
+	}*/
 )

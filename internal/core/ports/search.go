@@ -7,11 +7,11 @@ import (
 
 type (
 	SearchComicsRepo interface {
-		SearchComics(ctx context.Context, query string) (map[int]int, error)
-		AddComic(ctx context.Context, comic models.Comic) error
+		SearchComics(ctx context.Context, query string) map[int]int
+		AddComic(ctx context.Context, comic models.Comic)
 	}
-	SearchComicsService interface {
+	/*	SearchComicsService interface {
 		SearchComics(ctx context.Context, query string, limit int) ([]int, error)
 		AddComic(ctx context.Context, comic models.Comic) error
-	}
+	}*/
 )
