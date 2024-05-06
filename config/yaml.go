@@ -10,7 +10,7 @@ type (
 	Config struct {
 		DB      `yaml:"db"`
 		Fetcher `yaml:"fetcher"`
-		Server  `yaml:"server"`
+		Server  `yaml:"server,omitempty"`
 		Logger  `yaml:"logger"`
 		Search  `yaml:"search"`
 	}
@@ -30,7 +30,6 @@ type (
 		Parallel   int    `yaml:"parallel"`
 		UpdateSpec string `yaml:"update_spec"`
 	}
-
 	Server struct {
 		Port int `yaml:"port"`
 	}
