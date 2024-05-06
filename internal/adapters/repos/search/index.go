@@ -2,6 +2,7 @@ package search
 
 import (
 	"context"
+	"fmt"
 	"sync"
 	"yadro-go-course/internal/core/models"
 	"yadro-go-course/internal/core/ports"
@@ -11,34 +12,58 @@ import (
 type Index struct {
 	ind     map[string]map[int]struct{}
 	mu      sync.RWMutex
-	stemmer words.Stemmer
+	stemmer *words.Stemmer
 }
 
 var _ ports.SearchComicsRepo = (*Index)(nil)
+
+func NewIndex(stemmer *words.Stemmer) *Index {
+	return &Index{
+		ind:     make(map[string]map[int]struct{}),
+		stemmer: stemmer,
+	}
+}
 
 func (index *Index) SearchComics(ctx context.Context, query string) map[int]int {
 	parsed := words.ParsePhrase(query)
 	stemmed := index.stemmer.Stem(parsed)
 	found := make(map[int]int)
-	for word, _ := range stemmed {
+
+	for word := range stemmed {
 		index.mu.RLock()
-		for id, _ := range index.ind[word] {
+		for id := range index.ind[word] {
 			found[id]++
 		}
 		index.mu.RUnlock()
 	}
+
 	return found
 }
 func (index *Index) AddComic(ctx context.Context, comic models.Comic) {
-
 	keywords := index.stemmer.Stem(words.ParsePhrase(comic.Title + " " + comic.SafeTitle +
 		" " + comic.Transcription + " " + comic.AltTranscription))
-	for word, _ := range keywords {
+	for word := range keywords {
 		index.mu.Lock()
 		if _, ok := index.ind[word]; !ok {
 			index.ind[word] = make(map[int]struct{})
 		}
+
 		index.ind[word][comic.ID] = struct{}{}
 		index.mu.Unlock()
+	}
+}
+func (index *Index) MustBuild(repo ports.ComicsRepo, fetcher ports.ComicFetcherRepo) {
+	ctx := context.Background()
+	lastID, err := fetcher.LastComicID(ctx)
+
+	if err != nil {
+		panic(fmt.Errorf("could not get lastID : %w", err))
+	}
+
+	for id := 1; id <= lastID; id++ {
+		comic, err := repo.Comic(ctx, id)
+		if err == nil {
+			index.AddComic(ctx, comic)
+		}
 	}
 }

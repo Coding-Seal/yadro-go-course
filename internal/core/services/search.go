@@ -12,35 +12,46 @@ type Search struct { // TODO: add logging
 	comics ports.ComicsRepo
 }
 
+func NewSearch(repo ports.SearchComicsRepo, comics ports.ComicsRepo) *Search {
+	return &Search{repo: repo, comics: comics}
+}
+
 func (s *Search) SearchComics(ctx context.Context, query string, limit int) []models.Comic {
 	scored := s.repo.SearchComics(ctx, query)
 	limit = min(limit, len(scored))
-	found := make([]int, 0, limit)
-	i := 0
-	for id, _ := range scored {
-		if i >= limit {
-			break
-		}
+	found := make([]int, 0, len(scored))
+
+	for id := range scored {
 		found = append(found, id)
 	}
-	slices.SortFunc(found, func(a, b int) int { // check if valid
+
+	slices.SortFunc(found, func(a, b int) int {
 		sca, scb := scored[a], scored[b]
 		if sca == scb {
-			return b - a
-		} else if sca < scb {
-			return -1
-		} else {
-			return 1
+			return a - b
 		}
+
+		return scb - sca
 	})
+
 	result := make([]models.Comic, 0, limit)
+	i := 0
+
 	for _, id := range found {
 		comic, err := s.comics.Comic(ctx, id)
 		if err != nil {
-
+			continue
 		}
+
+		if i >= limit {
+			break
+		}
+
+		i++
+
 		result = append(result, comic)
 	}
+
 	return result
 }
 func (s *Search) AddComic(ctx context.Context, comic models.Comic) {
