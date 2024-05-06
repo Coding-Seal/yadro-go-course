@@ -1,35 +1,47 @@
 package handlers
 
 import (
-	"context"
-	"math/rand/v2"
+	"errors"
 	"net/http"
 	"yadro-go-course/internal/core/services"
 )
 
-func Update(fetcherSrv services.Fetcher) ErrHandleFunc {
+var (
+	ErrNotFound = errors.New("not found")
+	ErrInternal = errors.New("internal server error")
+)
+
+func Update(fetcherSrv *services.Fetcher) ErrHandleFunc {
 	return func(w http.ResponseWriter, r *http.Request) error {
-		ctx := context.WithValue(r.Context(), "request_id", rand.Int()) // TODO: create middleware
-		err := fetcherSrv.Update(ctx)
+		err := fetcherSrv.Update(r.Context())
 		if err != nil {
-			return nil // FIXME: ErrInternal
+			return errors.Join(ErrInternal, err)
 		}
-		w.WriteHeader(http.StatusOK)
-		return err
+
+		return nil
 	}
 }
-func Search(searchSrv services.Search) ErrHandleFunc {
+func Search(searchSrv *services.Search) ErrHandleFunc {
 	return func(w http.ResponseWriter, r *http.Request) error {
-		ctx := context.WithValue(r.Context(), "request_id", rand.Int()) // TODO: create middleware
 		phrase := r.URL.Query().Get("search")
-		comics := searchSrv.SearchComics(ctx, phrase, 10)
+		comics := searchSrv.SearchComics(r.Context(), phrase, 10)
+
 		if len(comics) == 0 {
-			return nil // FIXME: ErrNotFound
+			return ErrNotFound
 		}
-		urls := make([]string, len(comics))
+
+		urls := make([]string, 0, len(comics))
+
 		for _, comic := range comics {
 			urls = append(urls, comic.ImgURL)
 		}
-		return writeJson(w, http.StatusOK, urls)
+
+		err := writeJson(w, urls)
+
+		if err != nil {
+			return errors.Join(ErrInternal, err)
+		}
+
+		return nil
 	}
 }
