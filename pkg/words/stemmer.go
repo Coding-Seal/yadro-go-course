@@ -69,7 +69,7 @@ func ParseStopWords(reader io.Reader) map[string]struct{} {
 func ParsePhrase(phrase string) []string {
 	phrase = nonWordSymbolRegexp.ReplaceAllString(phrase, " ")
 	words := strings.FieldsFunc(phrase, func(r rune) bool {
-		return unicode.IsNumber(r) || unicode.IsLetter(r)
+		return !(unicode.IsNumber(r) || unicode.IsLetter(r))
 	})
 	deleted := 0
 
