@@ -51,7 +51,13 @@ func Run(cfg *config.Config) {
 	ind := search.NewIndex(words.NewStemmer(words.ParseStopWords(stopWordsFile)))
 
 	slog.Info("Building index")
-	ind.MustBuild(db, fet)
+
+	err = ind.Build(ctx, db)
+
+	if err != nil {
+		slog.Error("Error building index", slog.Any("error", err))
+	}
+
 	slog.Info("Index built")
 
 	// services

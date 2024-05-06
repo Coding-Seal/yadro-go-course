@@ -14,5 +14,6 @@ func Routes(fetcher *services.Fetcher, search *services.Search) http.Handler {
 	mux.Handle("POST /update", handlers.WrapHandler(handlers.Update(fetcher)))
 
 	st := middleware.Stack(middleware.AddRequestID, middleware.Logging)
+
 	return st(mux)
 }

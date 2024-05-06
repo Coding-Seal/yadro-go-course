@@ -13,5 +13,6 @@ type (
 	ComicsRepo interface {
 		Comic(ctx context.Context, id int) (models.Comic, error)
 		Store(ctx context.Context, comic models.Comic) error
+		ComicsAll(ctx context.Context) ([]models.Comic, error)
 	}
 )

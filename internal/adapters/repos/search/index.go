@@ -2,7 +2,6 @@ package search
 
 import (
 	"context"
-	"fmt"
 	"sync"
 	"yadro-go-course/internal/core/models"
 	"yadro-go-course/internal/core/ports"
@@ -52,18 +51,15 @@ func (index *Index) AddComic(ctx context.Context, comic models.Comic) {
 		index.mu.Unlock()
 	}
 }
-func (index *Index) MustBuild(repo ports.ComicsRepo, fetcher ports.ComicFetcherRepo) {
-	ctx := context.Background()
-	lastID, err := fetcher.LastComicID(ctx)
-
+func (index *Index) Build(ctx context.Context, repo ports.ComicsRepo) error {
+	comics, err := repo.ComicsAll(ctx)
 	if err != nil {
-		panic(fmt.Errorf("could not get lastID : %w", err))
+		return err
 	}
 
-	for id := 1; id <= lastID; id++ {
-		comic, err := repo.Comic(ctx, id)
-		if err == nil {
-			index.AddComic(ctx, comic)
-		}
+	for _, comic := range comics {
+		index.AddComic(ctx, comic)
 	}
+
+	return nil
 }

@@ -74,3 +74,15 @@ func (db *JsonRepo) Store(ctx context.Context, comic models.Comic) error {
 
 	return nil
 }
+
+func (db *JsonRepo) ComicsAll(ctx context.Context) ([]models.Comic, error) {
+	db.mu.RLock()
+	defer db.mu.RUnlock()
+	comics := make([]models.Comic, 0, len(db.m))
+
+	for _, comic := range db.m {
+		comics = append(comics, comic)
+	}
+
+	return comics, nil
+}
