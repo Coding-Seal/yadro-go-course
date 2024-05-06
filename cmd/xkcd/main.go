@@ -8,23 +8,21 @@ import (
 )
 
 func main() {
-	var configName string
+	var configPath string
 
-	var searchPhrase string
+	var port int
 
-	var useIndex bool
-
-	var numComics int
-
-	flag.StringVar(&configName, "c", "config.yaml", "Path to config file")
-	flag.StringVar(&searchPhrase, "s", "", "Search words")
-	flag.BoolVar(&useIndex, "i", false, "Use index")
-	flag.IntVar(&numComics, "n", 10, "Number of comics to print")
+	flag.StringVar(&configPath, "c", "config.yaml", "Path to config file")
+	flag.IntVar(&port, "p", 0, "Port to listen on")
 	flag.Parse()
 
-	cfg, err := config.NewConfig(configName)
+	cfg, err := config.NewConfig(configPath)
 	if err != nil {
 		log.Fatalln(err)
+	}
+
+	if port != 0 {
+		cfg.Port = port
 	}
 
 	web.Run(cfg)

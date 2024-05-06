@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
+	"github.com/robfig/cron/v3"
 	"log/slog"
 	"net/http"
 	"os"
@@ -15,43 +15,16 @@ import (
 	"yadro-go-course/internal/adapters/repos/comic"
 	"yadro-go-course/internal/adapters/repos/fetcher"
 	"yadro-go-course/internal/adapters/repos/search"
-	"yadro-go-course/internal/adapters/web/handlers"
-	"yadro-go-course/internal/adapters/web/middleware"
 	"yadro-go-course/internal/core/services"
 	"yadro-go-course/pkg/words"
 )
 
 func Run(cfg *config.Config) {
+	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	defer stop()
+
 	// Logger
-	opts := slog.HandlerOptions{
-		Level: nil,
-	}
-
-	switch cfg.Logger.Level {
-	case "debug":
-		opts.Level = slog.LevelDebug
-	case "info":
-		opts.Level = slog.LevelInfo
-	case "warn":
-		opts.Level = slog.LevelWarn
-	case "error":
-		opts.Level = slog.LevelError
-	default:
-		log.Fatalln("Invalid log level")
-	}
-
-	var logHand slog.Handler
-
-	switch cfg.Logger.Type {
-	case "json":
-		logHand = slog.NewJSONHandler(os.Stdout, &opts)
-	case "text":
-		logHand = slog.NewTextHandler(os.Stdout, &opts)
-	default:
-		log.Fatalln("Invalid log type")
-	}
-
-	slog.SetDefault(slog.New(logHand))
+	SetupLogger(cfg)
 
 	// repos
 	// DB
@@ -87,28 +60,26 @@ func Run(cfg *config.Config) {
 
 	slog.Info("Fetching missing comics")
 
-	err = comicFetcher.Update(context.Background())
-
-	if err != nil {
+	if err := comicFetcher.Update(ctx); err != nil {
 		slog.Error("Error updating comics", slog.Any("error", err))
 	}
 
 	slog.Info("Missing comics fetched")
 
-	mux := http.NewServeMux()
+	c := cron.New()
+	_, err = c.AddFunc(cfg.UpdateSpec, func() {
+		if err := comicFetcher.Update(ctx); err != nil {
+			slog.Error("Error updating comics", slog.Any("error", err))
+		}
+	})
 
-	mux.Handle("GET /pics", handlers.WrapHandler(handlers.Search(searchService)))
-	mux.Handle("POST /update", handlers.WrapHandler(handlers.Update(comicFetcher)))
+	if err != nil {
+		slog.Error("Invalid cron spec", slog.Any("error", err))
+	}
 
-	st := middleware.Stack(middleware.AddRequestID, middleware.Logging)
 	srv := http.Server{
-		Addr:              fmt.Sprintf("localhost:%d", cfg.Server.Port),
-		Handler:           st(mux),
-		ReadTimeout:       0,
-		ReadHeaderTimeout: 0,
-		WriteTimeout:      0,
-		IdleTimeout:       0,
-		MaxHeaderBytes:    0,
+		Addr:    fmt.Sprintf("localhost:%d", cfg.Server.Port),
+		Handler: Routes(comicFetcher, searchService),
 	}
 	done := make(chan os.Signal, 1)
 	signal.Notify(done, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
@@ -119,12 +90,12 @@ func Run(cfg *config.Config) {
 			os.Exit(1)
 		}
 	}()
-	slog.Info("Server Started", slog.String("url", srv.Addr))
+	slog.Info("Server Started", slog.String("url", fmt.Sprintf("http://%s", srv.Addr)))
 
 	<-done
 	slog.Info("Server Stopped")
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer func() {
 		cancel()
 	}()

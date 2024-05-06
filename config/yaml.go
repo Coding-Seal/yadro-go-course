@@ -26,8 +26,9 @@ type (
 		StopWordsFile string `yaml:"stop_words_file"`
 	}
 	Fetcher struct {
-		SourceURL string `yaml:"source_url"`
-		Parallel  int    `yaml:"parallel"`
+		SourceURL  string `yaml:"source_url"`
+		Parallel   int    `yaml:"parallel"`
+		UpdateSpec string `yaml:"update_spec"`
 	}
 
 	Server struct {
@@ -52,8 +53,9 @@ func NewConfig(configPath string) (*Config, error) {
 			StopWordsFile: "stopwords.txt",
 		},
 		Fetcher: Fetcher{
-			SourceURL: "https://xkcd.com",
-			Parallel:  100,
+			SourceURL:  "https://xkcd.com",
+			Parallel:   100,
+			UpdateSpec: "0 0 * * ?",
 		},
 	}
 
