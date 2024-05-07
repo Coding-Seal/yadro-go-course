@@ -28,12 +28,14 @@ func (index *Index) SearchComics(ctx context.Context, query string) map[int]int 
 	stemmed := index.stemmer.Stem(parsed)
 	found := make(map[int]int)
 
+	index.mu.RLock()
+	defer index.mu.RUnlock()
+
 	for word := range stemmed {
-		index.mu.RLock()
+
 		for id := range index.ind[word] {
 			found[id]++
 		}
-		index.mu.RUnlock()
 	}
 
 	return found
