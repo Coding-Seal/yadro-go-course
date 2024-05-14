@@ -2,8 +2,10 @@ package web
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
+	_ "github.com/mattn/go-sqlite3"
 	"github.com/robfig/cron/v3"
 	"log/slog"
 	"net/http"
@@ -15,6 +17,7 @@ import (
 	"yadro-go-course/internal/adapters/repos/comic"
 	"yadro-go-course/internal/adapters/repos/fetcher"
 	"yadro-go-course/internal/adapters/repos/search"
+	"yadro-go-course/internal/core/ports"
 	"yadro-go-course/internal/core/services"
 	"yadro-go-course/pkg/words"
 )
@@ -28,16 +31,28 @@ func Run(cfg *config.Config) {
 
 	// repos
 	// DB
-	slog.Info("Opening DB", slog.String("url", cfg.DB.Url))
-	file, err := os.OpenFile(cfg.Url, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+	var db ports.ComicsRepo
+	switch cfg.DB.Type {
+	case "json":
+		slog.Info("Opening JsonDB", slog.String("url", cfg.DB.Url))
+		file, err := os.OpenFile(cfg.Url, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 
-	if err != nil {
-		slog.Error("Error opening file", slog.String("url", cfg.DB.Url))
-		os.Exit(1)
+		if err != nil {
+			slog.Error("Error opening file", slog.String("url", cfg.DB.Url))
+			os.Exit(1)
+		}
+
+		defer file.Close()
+		db = comic.NewJsonDB(file)
+	case "sqlite":
+		slog.Info("Opening SQLiteDB", slog.String("url", cfg.DB.Url))
+		con, err := sql.Open("sqlite3", cfg.DB.Url)
+		if err != nil {
+			slog.Error("Error opening SQLiteDB", slog.String("url", cfg.DB.Url), slog.Any("error", err))
+			os.Exit(1)
+		}
+		db = comic.NewSqliteStore(con)
 	}
-
-	defer file.Close()
-	db := comic.NewJsonDB(file)
 	// fetcher
 	fet := fetcher.NewFetcher(cfg.SourceURL, cfg.Parallel)
 	// Index
@@ -50,16 +65,6 @@ func Run(cfg *config.Config) {
 
 	ind := search.NewIndex(words.NewStemmer(words.ParseStopWords(stopWordsFile)))
 
-	slog.Info("Building index")
-
-	err = ind.Build(ctx, db)
-
-	if err != nil {
-		slog.Error("Error building index", slog.Any("error", err))
-	}
-
-	slog.Info("Index built")
-
 	// services
 	searchService := services.NewSearch(ind, db)
 	comicFetcher := services.NewFetcher(fet, db, ind)
@@ -71,6 +76,13 @@ func Run(cfg *config.Config) {
 	}
 
 	slog.Info("Missing comics fetched")
+
+	slog.Info("Building index")
+	err = ind.Build(ctx, db)
+
+	if err != nil {
+		slog.Error("Error building index", slog.Any("error", err))
+	}
 
 	c := cron.New()
 	_, err = c.AddFunc(cfg.UpdateSpec, func() {

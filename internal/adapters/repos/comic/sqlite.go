@@ -3,20 +3,16 @@ package comic
 import (
 	"context"
 	"database/sql"
-	"embed"
 	"errors"
 	"yadro-go-course/internal/core/models"
 	"yadro-go-course/internal/core/ports"
 )
 
-//go:embed sqlite-migrations
-var fs embed.FS
-
 type SqliteStore struct {
 	db *sql.DB
 }
 
-func NewSqliteStore(db *sql.DB, migratePath string) *SqliteStore {
+func NewSqliteStore(db *sql.DB) *SqliteStore {
 	return &SqliteStore{
 		db: db,
 	}
@@ -50,7 +46,7 @@ func (s SqliteStore) Store(ctx context.Context, comic models.Comic) error {
 }
 
 func (s SqliteStore) ComicsAll(ctx context.Context) ([]models.Comic, error) {
-	rows, err := s.db.QueryContext(ctx, "SELECT * FROM comics WHERE comic_id =$1")
+	rows, err := s.db.QueryContext(ctx, "SELECT * FROM comics")
 	if err != nil {
 		return nil, errors.Join(ports.ErrInternal, err)
 	}

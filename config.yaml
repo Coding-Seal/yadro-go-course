@@ -1,6 +1,6 @@
 db:
-  type: json
-  url: somefile.jsonl
+  type: sqlite
+  url: comics.db
 fetcher:
   source_url: https://xkcd.com
   parallel: 100
