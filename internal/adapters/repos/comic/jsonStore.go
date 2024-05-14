@@ -10,9 +10,6 @@ import (
 	"yadro-go-course/pkg/jsonl"
 )
 
-var ErrNotFound = errors.New("comic not found")
-var ErrInternal = errors.New("internal error")
-
 type JsonRepo struct {
 	file *os.File
 	m    map[int]models.Comic
@@ -50,7 +47,7 @@ func (db *JsonRepo) Comic(ctx context.Context, id int) (models.Comic, error) {
 		return comic, nil
 	}
 
-	return models.Comic{}, ErrNotFound
+	return models.Comic{}, ports.ErrNotFound
 }
 func (db *JsonRepo) Store(ctx context.Context, comic models.Comic) error {
 	db.mu.RLock()
@@ -65,11 +62,11 @@ func (db *JsonRepo) Store(ctx context.Context, comic models.Comic) error {
 	wr := jsonl.NewWriter(db.file)
 
 	if err := wr.WriteJson(comic); err != nil {
-		return errors.Join(ErrInternal, err)
+		return errors.Join(ports.ErrInternal, err)
 	}
 
 	if err := wr.Flush(); err != nil {
-		return errors.Join(ErrInternal, err)
+		return errors.Join(ports.ErrInternal, err)
 	}
 
 	return nil
