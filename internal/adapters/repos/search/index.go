@@ -32,7 +32,6 @@ func (index *Index) SearchComics(ctx context.Context, query string) map[int]int 
 	defer index.mu.RUnlock()
 
 	for word := range stemmed {
-
 		for id := range index.ind[word] {
 			found[id]++
 		}

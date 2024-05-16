@@ -23,14 +23,17 @@ var _ ports.ComicsRepo = (*SqliteStore)(nil)
 func (s SqliteStore) Comic(ctx context.Context, id int) (models.Comic, error) {
 	row := s.db.QueryRowContext(ctx, "SELECT * FROM comics WHERE comic_id =$1 LIMIT (1)", id)
 	comic := models.Comic{}
+
 	err := row.Scan(&comic.ID, &comic.Title, &comic.Date, &comic.ImgURL,
 		&comic.News, &comic.SafeTitle, &comic.Transcription, &comic.AltTranscription, &comic.Link)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return models.Comic{}, errors.Join(ports.ErrNotFound, err)
 		}
+
 		return models.Comic{}, errors.Join(ports.ErrInternal, err)
 	}
+
 	return comic, nil
 }
 
@@ -42,6 +45,7 @@ func (s SqliteStore) Store(ctx context.Context, comic models.Comic) error {
 	if err != nil {
 		return errors.Join(ports.ErrInternal, err)
 	}
+
 	return nil
 }
 
@@ -50,19 +54,26 @@ func (s SqliteStore) ComicsAll(ctx context.Context) ([]models.Comic, error) {
 	if err != nil {
 		return nil, errors.Join(ports.ErrInternal, err)
 	}
+
 	defer rows.Close() // it seems unnecessary
+
 	var comics []models.Comic
+
 	for rows.Next() {
 		comic := models.Comic{}
+
 		err := rows.Scan(&comic.ID, &comic.Title, &comic.Date,
 			&comic.ImgURL, &comic.News, &comic.SafeTitle, &comic.Transcription, &comic.AltTranscription, &comic.Link)
 		if err != nil {
 			return nil, errors.Join(ports.ErrInternal, err)
 		}
+
 		comics = append(comics, comic)
 	}
+
 	if err := rows.Err(); err != nil {
 		return nil, errors.Join(ports.ErrInternal, err)
 	}
+
 	return comics, nil
 }
