@@ -1,6 +1,7 @@
 db:
   type: sqlite
   url: comics.db
+  version: 1
 fetcher:
   source_url: https://xkcd.com
   parallel: 100

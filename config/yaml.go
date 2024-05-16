@@ -19,8 +19,9 @@ type (
 		Level string `yaml:"level"`
 	}
 	DB struct {
-		Type string `yaml:"type"`
-		Url  string `yaml:"url"`
+		Type    string `yaml:"type"`
+		Url     string `yaml:"url"`
+		Version uint   `yaml:"version"`
 	}
 	Search struct {
 		StopWordsFile string `yaml:"stop_words_file"`
