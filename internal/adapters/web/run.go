@@ -6,17 +6,19 @@ import (
 	"embed"
 	"errors"
 	"fmt"
-	"github.com/golang-migrate/migrate/v4"
-	sqlitedr "github.com/golang-migrate/migrate/v4/database/sqlite3"
-	"github.com/golang-migrate/migrate/v4/source/iofs"
-	_ "github.com/mattn/go-sqlite3"
-	"github.com/robfig/cron/v3"
 	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
+
+	"github.com/golang-migrate/migrate/v4"
+	sqlitedr "github.com/golang-migrate/migrate/v4/database/sqlite3"
+	"github.com/golang-migrate/migrate/v4/source/iofs"
+	_ "github.com/mattn/go-sqlite3"
+	"github.com/robfig/cron/v3"
+
 	"yadro-go-course/config"
 	"yadro-go-course/internal/adapters/repos/comic"
 	"yadro-go-course/internal/adapters/repos/fetcher"
@@ -81,8 +83,8 @@ func Run(cfg *config.Config) {
 			stopMgr <- true
 		}()
 
-		err = mgr.Migrate(cfg.Version)
-		if err != nil {
+		err = mgr.Up()
+		if err != nil && !errors.Is(err, migrate.ErrNoChange) {
 			slog.Error("Error running migrations", slog.Any("error", err))
 			os.Exit(1)
 		}
@@ -92,7 +94,7 @@ func Run(cfg *config.Config) {
 	// fetcher
 	fet := fetcher.NewFetcher(cfg.SourceURL, cfg.Parallel)
 	// Index
-	stopWordsFile, err := os.OpenFile(cfg.StopWordsFile, os.O_RDONLY, 0666)
+	stopWordsFile, err := os.OpenFile(cfg.StopWordsFile, os.O_RDONLY, 0o666)
 	if err != nil {
 		slog.Error("Error opening file", slog.String("stopWordsFile", cfg.StopWordsFile))
 		os.Exit(1)
@@ -116,18 +118,17 @@ func Run(cfg *config.Config) {
 	slog.Info("Building index")
 
 	err = ind.Build(ctx, db)
-
 	if err != nil {
 		slog.Error("Error building index", slog.Any("error", err))
 	}
 
 	c := cron.New()
+
 	_, err = c.AddFunc(cfg.UpdateSpec, func() {
 		if err := comicFetcher.Update(ctx); err != nil {
 			slog.Error("Error updating comics", slog.Any("error", err))
 		}
 	})
-
 	if err != nil {
 		slog.Error("Invalid cron spec", slog.Any("error", err))
 	}

@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+
 	"yadro-go-course/internal/core/models"
 	"yadro-go-course/internal/core/ports"
 )
@@ -21,7 +22,7 @@ func NewSqliteStore(db *sql.DB) *SqliteStore {
 var _ ports.ComicsRepo = (*SqliteStore)(nil)
 
 func (s SqliteStore) Comic(ctx context.Context, id int) (models.Comic, error) {
-	row := s.db.QueryRowContext(ctx, "SELECT * FROM comics WHERE comic_id =$1 LIMIT (1)", id)
+	row := s.db.QueryRowContext(ctx, "SELECT * FROM comics WHERE comic_id =$1", id)
 	comic := models.Comic{}
 
 	err := row.Scan(&comic.ID, &comic.Title, &comic.Date, &comic.ImgURL,
