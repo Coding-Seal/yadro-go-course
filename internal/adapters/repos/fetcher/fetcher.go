@@ -3,6 +3,7 @@ package fetcher
 import (
 	"context"
 	"errors"
+
 	"yadro-go-course/internal/core/models"
 	"yadro-go-course/internal/core/ports"
 	"yadro-go-course/pkg/xkcd"

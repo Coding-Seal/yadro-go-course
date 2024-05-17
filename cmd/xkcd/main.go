@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"log"
+
 	"yadro-go-course/config"
 	"yadro-go-course/internal/adapters/web"
 )

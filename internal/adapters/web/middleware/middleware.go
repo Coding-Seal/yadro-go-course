@@ -5,6 +5,7 @@ import (
 	"math/rand/v2"
 	"net/http"
 	"time"
+
 	"yadro-go-course/internal/contextutil"
 )
 
@@ -19,6 +20,7 @@ func Stack(middlewares ...Middleware) Middleware {
 		return next
 	}
 }
+
 func AddRequestID(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := contextutil.WithReqID(r.Context(), rand.Int()) // Maybe swap for uuid
@@ -43,8 +45,8 @@ func Logging(next http.Handler) http.Handler {
 		next.ServeHTTP(ww, r)
 
 		end := time.Since(start)
-		reqID, err := contextutil.ReqID(r.Context())
 
+		reqID, err := contextutil.ReqID(r.Context())
 		if err != nil {
 			slog.Error("middleware: logging", slog.Any("error", err))
 		}

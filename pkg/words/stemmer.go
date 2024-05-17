@@ -2,12 +2,13 @@ package words
 
 import (
 	"bufio"
-	"github.com/kljensen/snowball"
 	"io"
 	"regexp"
 	"slices"
 	"strings"
 	"unicode"
+
+	"github.com/kljensen/snowball"
 )
 
 var nonWordSymbolRegexp = regexp.MustCompile("[^0-9A-Za-z_]+")
@@ -48,7 +49,8 @@ func NewStemmer(stopWords map[string]struct{}) *Stemmer {
 		"which": {}, "while": {}, "who": {}, "who's": {}, "whom": {}, "why": {}, "why's": {},
 		"with": {}, "won't": {}, "would": {}, "wouldn't": {}, "you": {}, "you'd": {}, "you'll": {},
 		"you're": {}, "you've": {}, "your": {}, "yours": {}, "yourself": {}, "yourselves": {},
-		"alt": {}, "text": {}, "title": {}}}
+		"alt": {}, "text": {}, "title": {},
+	}}
 }
 
 func ParseStopWords(reader io.Reader) map[string]struct{} {
@@ -94,6 +96,7 @@ func (s *Stemmer) isStopWord(word string) bool {
 	_, ok := s.stopWords[word]
 	return ok
 }
+
 func (s *Stemmer) Stem(words []string) map[string]int {
 	// using map to avoid duplicates
 	stemmed := make(map[string]int)

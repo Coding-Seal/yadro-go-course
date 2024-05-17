@@ -11,9 +11,7 @@ import (
 	"time"
 )
 
-var (
-	ErrNotFound = errors.New(http.StatusText(http.StatusNotFound))
-)
+var ErrNotFound = errors.New(http.StatusText(http.StatusNotFound))
 
 type Fetcher struct {
 	client           *http.Client
@@ -50,15 +48,15 @@ func (f *Fetcher) Comics(ctx context.Context, numComics int) (chan<- int, <-chan
 
 func (f *Fetcher) Comic(ctx context.Context, id int) (*Comic, error) {
 	url := fmt.Sprintf("%s/%d/info.0.json", f.source, id)
-	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
 
+	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
 	if err != nil {
 		return nil, err
 	}
 
 	req.Header.Add("Accept", `application/json`)
-	resp, err := f.client.Do(req)
 
+	resp, err := f.client.Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -77,15 +75,15 @@ func (f *Fetcher) Comic(ctx context.Context, id int) (*Comic, error) {
 
 func (f *Fetcher) LastID(ctx context.Context) (int, error) {
 	url := fmt.Sprintf("%s/info.0.json", f.source)
-	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
 
+	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
 	if err != nil {
 		return 0, fmt.Errorf("LastID : %w", err)
 	}
 
 	req.Header.Add("Accept", `application/json`)
-	resp, err := f.client.Do(req)
 
+	resp, err := f.client.Do(req)
 	if err != nil {
 		return 0, fmt.Errorf("LastID : %w", err)
 	}
@@ -102,7 +100,6 @@ func (f *Fetcher) LastID(ctx context.Context) (int, error) {
 
 func (f *Fetcher) isComicPresent(ctx context.Context, id int) (bool, error) {
 	_, err := f.Comic(ctx, id)
-
 	if err != nil {
 		if errors.Is(err, ErrNotFound) {
 			return false, nil
@@ -113,24 +110,24 @@ func (f *Fetcher) isComicPresent(ctx context.Context, id int) (bool, error) {
 
 	return true, nil
 }
+
 func (f *Fetcher) SearchLastID(ctx context.Context) (int, error) {
 	left, right := 1, math.MaxInt
-	leftPresent, err := f.isComicPresent(ctx, left)
 
+	leftPresent, err := f.isComicPresent(ctx, left)
 	if err != nil {
 		return 0, err
 	}
 
 	rightPresent, err := f.isComicPresent(ctx, right)
-
 	if err != nil {
 		return 0, err
 	}
 
 	for left+1 < right && leftPresent && !rightPresent {
 		pivot := left + (right-left)/2
-		pivotPresent, err := f.isComicPresent(ctx, pivot)
 
+		pivotPresent, err := f.isComicPresent(ctx, pivot)
 		if err != nil {
 			return 0, err
 		}
@@ -177,8 +174,8 @@ func parseJsonComic(r io.Reader) *Comic {
 	var dto ParsedComic
 
 	decoder := json.NewDecoder(r)
-	err := decoder.Decode(&dto)
 
+	err := decoder.Decode(&dto)
 	if err != nil {
 		return nil
 	}
