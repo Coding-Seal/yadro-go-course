@@ -5,6 +5,7 @@ import (
 	"errors"
 	"log/slog"
 	"net/http"
+
 	"yadro-go-course/internal/contextutil"
 )
 
@@ -32,8 +33,8 @@ func WrapHandler(fn ErrHandleFunc) http.Handler {
 
 func writeJson(w http.ResponseWriter, v any) error {
 	en := json.NewEncoder(w)
-	err := en.Encode(v)
 
+	err := en.Encode(v)
 	if err != nil {
 		return err
 	}

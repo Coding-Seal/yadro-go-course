@@ -3,6 +3,7 @@ package search
 import (
 	"context"
 	"sync"
+
 	"yadro-go-course/internal/core/models"
 	"yadro-go-course/internal/core/ports"
 	"yadro-go-course/pkg/words"
@@ -32,7 +33,6 @@ func (index *Index) SearchComics(ctx context.Context, query string) map[int]int 
 	defer index.mu.RUnlock()
 
 	for word := range stemmed {
-
 		for id := range index.ind[word] {
 			found[id]++
 		}
@@ -40,6 +40,7 @@ func (index *Index) SearchComics(ctx context.Context, query string) map[int]int 
 
 	return found
 }
+
 func (index *Index) AddComic(ctx context.Context, comic models.Comic) {
 	keywords := index.stemmer.Stem(words.ParsePhrase(comic.Title + " " + comic.SafeTitle +
 		" " + comic.Transcription + " " + comic.AltTranscription))
@@ -53,6 +54,7 @@ func (index *Index) AddComic(ctx context.Context, comic models.Comic) {
 		index.mu.Unlock()
 	}
 }
+
 func (index *Index) Build(ctx context.Context, repo ports.ComicsRepo) error {
 	comics, err := repo.ComicsAll(ctx)
 	if err != nil {

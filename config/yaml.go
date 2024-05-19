@@ -2,8 +2,9 @@ package config
 
 import (
 	"fmt"
-	"gopkg.in/yaml.v3"
 	"os"
+
+	"gopkg.in/yaml.v3"
 )
 
 type (
@@ -19,8 +20,9 @@ type (
 		Level string `yaml:"level"`
 	}
 	DB struct {
-		Type string `yaml:"type"`
-		Url  string `yaml:"url"`
+		Type    string `yaml:"type"`
+		Url     string `yaml:"url"`
+		Version uint   `yaml:"version"`
 	}
 	Search struct {
 		StopWordsFile string `yaml:"stop_words_file"`
@@ -59,15 +61,14 @@ func NewConfig(configPath string) (*Config, error) {
 	}
 
 	file, err := os.Open(configPath)
-
 	if err != nil {
 		return config, fmt.Errorf("loading config: %w", err)
 	}
 
 	defer file.Close()
 	d := yaml.NewDecoder(file)
-	err = d.Decode(&config)
 
+	err = d.Decode(&config)
 	if err != nil {
 		return config, fmt.Errorf("parsing config: %w", err)
 	}

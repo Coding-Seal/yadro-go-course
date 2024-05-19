@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"slices"
+
 	"yadro-go-course/internal/core/models"
 	"yadro-go-course/internal/core/ports"
 )
@@ -54,6 +55,7 @@ func (s *Search) SearchComics(ctx context.Context, query string, limit int) []mo
 
 	return result
 }
+
 func (s *Search) AddComic(ctx context.Context, comic models.Comic) {
 	s.repo.AddComic(ctx, comic)
 }

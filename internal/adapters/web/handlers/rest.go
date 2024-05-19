@@ -3,6 +3,7 @@ package handlers
 import (
 	"errors"
 	"net/http"
+
 	"yadro-go-course/internal/core/services"
 )
 
@@ -21,6 +22,7 @@ func Update(fetcherSrv *services.Fetcher) ErrHandleFunc {
 		return nil
 	}
 }
+
 func Search(searchSrv *services.Search) ErrHandleFunc {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		phrase := r.URL.Query().Get("search")
@@ -37,7 +39,6 @@ func Search(searchSrv *services.Search) ErrHandleFunc {
 		}
 
 		err := writeJson(w, urls)
-
 		if err != nil {
 			return errors.Join(ErrInternal, err)
 		}

@@ -15,6 +15,7 @@ func ReqID(ctx context.Context) (int, error) {
 
 	return id, nil
 }
+
 func WithReqID(ctx context.Context, id int) context.Context {
 	return context.WithValue(ctx, requestIDKey{}, id)
 }
