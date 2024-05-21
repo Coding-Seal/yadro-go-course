@@ -18,6 +18,8 @@ test:
 .PHONY lint-strict:
 lint-strict:
 	@echo Linting...
-.PHONY format:
+format:
 	gofumpt -w .
 	wsl -fix ./...
+.PHONY sec:
+	govulncheck

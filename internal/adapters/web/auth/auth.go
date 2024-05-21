@@ -10,6 +10,7 @@ import (
 	"yadro-go-course/internal/contextutil"
 )
 
+// probably should move to a config file and use git-secret. Won't do
 var jwtSecret = []byte("5902dae04b5ee9cafedfacaf7dbcad276b66e647cb0f62fe7ca3cde2e6351258")
 
 type customClaims struct {
