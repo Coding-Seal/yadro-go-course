@@ -2,18 +2,17 @@ package contextutil
 
 import (
 	"context"
-	"errors"
 )
 
 type requestIDKey struct{}
 
-func ReqID(ctx context.Context) (int, error) {
+func ReqID(ctx context.Context) int {
 	id, ok := ctx.Value(requestIDKey{}).(int)
 	if !ok {
-		return 0, errors.New("invalid request id")
+		panic("Should have set request id")
 	}
 
-	return id, nil
+	return id
 }
 
 func WithReqID(ctx context.Context, id int) context.Context {

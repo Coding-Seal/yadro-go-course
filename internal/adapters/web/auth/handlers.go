@@ -1,0 +1,49 @@
+package auth
+
+import (
+	"errors"
+	"net/http"
+
+	"github.com/golang-jwt/jwt/v5"
+	"golang.org/x/crypto/bcrypt"
+
+	"yadro-go-course/internal/adapters/web/handlers"
+	"yadro-go-course/internal/core/ports"
+	"yadro-go-course/internal/core/services"
+)
+
+func Login(userSrv *services.UserService) handlers.ErrHandleFunc {
+	return func(w http.ResponseWriter, r *http.Request) error {
+		login := r.FormValue("login")
+		pswd := []byte(r.FormValue("password"))
+
+		if login == "" || len(pswd) == 0 {
+			return errors.Join(handlers.ErrBadRequest, handlers.ErrNoLoginOrPassword)
+		}
+
+		u, err := userSrv.UserLogin(r.Context(), login)
+		if err != nil {
+			if errors.Is(err, ports.ErrNotFound) {
+				return errors.Join(handlers.ErrNotFound, err)
+			}
+
+			return errors.Join(handlers.ErrInternal, err)
+		}
+
+		err = bcrypt.CompareHashAndPassword(u.Password, pswd)
+		if err != nil {
+			return errors.Join(handlers.ErrInternal, err)
+		}
+
+		token := jwt.NewWithClaims(jwt.SigningMethodHS512, customClaims{UserID: u.ID, IsAdmin: u.IsAdmin})
+
+		tokenStr, err := token.SignedString(jwtSecret)
+		if err != nil {
+			return errors.Join(handlers.ErrInternal, err)
+		}
+
+		w.Header().Set("Authorization", tokenStr)
+
+		return nil
+	}
+}

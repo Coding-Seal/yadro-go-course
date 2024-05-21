@@ -13,6 +13,11 @@ import (
 	"syscall"
 	"time"
 
+	"golang.org/x/crypto/bcrypt"
+
+	"yadro-go-course/internal/adapters/repos/user"
+	"yadro-go-course/internal/core/models"
+
 	"github.com/golang-migrate/migrate/v4"
 	sqlitedr "github.com/golang-migrate/migrate/v4/database/sqlite3"
 	"github.com/golang-migrate/migrate/v4/source/iofs"
@@ -40,57 +45,56 @@ func Run(cfg *config.Config) {
 
 	// repos
 	// DB
-	var db ports.ComicsRepo
+	var comicDB ports.ComicsRepo
 
-	switch cfg.DB.Type {
-	case "sqlite":
-		slog.Info("Opening SQLiteDB", slog.String("url", cfg.DB.Url))
+	slog.Info("Opening SQLiteDB", slog.String("url", cfg.DB.Url))
 
-		con, err := sql.Open("sqlite3", cfg.DB.Url)
-		if err != nil {
-			slog.Error("Error opening SQLiteDB", slog.String("url", cfg.DB.Url), slog.Any("error", err))
-			os.Exit(1)
-		}
-
-		slog.Info("Running migrations")
-
-		src, err := iofs.New(migrations, "migrations")
-		if err != nil {
-			slog.Error("Error creating migration src", slog.Any("error", err))
-			os.Exit(1)
-		}
-
-		dr, err := sqlitedr.WithInstance(con, &sqlitedr.Config{
-			MigrationsTable: sqlitedr.DefaultMigrationsTable,
-			DatabaseName:    "comics",
-			NoTxWrap:        false,
-		})
-		if err != nil {
-			slog.Error("Error creating driver", slog.Any("error", err))
-			os.Exit(1)
-		}
-
-		mgr, err := migrate.NewWithInstance("iofs", src, "sqlite3", dr)
-		if err != nil {
-			slog.Error("Error creating migrate", slog.Any("error", err))
-			os.Exit(1)
-		}
-
-		stopMgr := mgr.GracefulStop
-
-		go func() {
-			<-ctx.Done()
-			stopMgr <- true
-		}()
-
-		err = mgr.Up()
-		if err != nil && !errors.Is(err, migrate.ErrNoChange) {
-			slog.Error("Error running migrations", slog.Any("error", err))
-			os.Exit(1)
-		}
-
-		db = comic.NewSqliteStore(con)
+	con, err := sql.Open("sqlite3", cfg.DB.Url)
+	if err != nil {
+		slog.Error("Error opening SQLiteDB", slog.String("url", cfg.DB.Url), slog.Any("error", err))
+		os.Exit(1)
 	}
+
+	slog.Info("Running migrations")
+
+	src, err := iofs.New(migrations, "migrations")
+	if err != nil {
+		slog.Error("Error creating migration src", slog.Any("error", err))
+		os.Exit(1)
+	}
+
+	dr, err := sqlitedr.WithInstance(con, &sqlitedr.Config{
+		MigrationsTable: sqlitedr.DefaultMigrationsTable,
+		DatabaseName:    "comics",
+		NoTxWrap:        false,
+	})
+	if err != nil {
+		slog.Error("Error creating driver", slog.Any("error", err))
+		os.Exit(1)
+	}
+
+	mgr, err := migrate.NewWithInstance("iofs", src, "sqlite3", dr)
+	if err != nil {
+		slog.Error("Error creating migrate", slog.Any("error", err))
+		os.Exit(1)
+	}
+
+	stopMgr := mgr.GracefulStop
+
+	go func() {
+		<-ctx.Done()
+		stopMgr <- true
+	}()
+
+	err = mgr.Up()
+	if err != nil && !errors.Is(err, migrate.ErrNoChange) {
+		slog.Error("Error running migrations", slog.Any("error", err))
+		os.Exit(1)
+	}
+
+	comicDB = comic.NewSqliteStore(con)
+	userDB := user.NewSqliteRepo(con)
+
 	// fetcher
 	fet := fetcher.NewFetcher(cfg.SourceURL, cfg.Parallel)
 	// Index
@@ -104,8 +108,9 @@ func Run(cfg *config.Config) {
 	ind := search.NewIndex(words.NewStemmer(words.ParseStopWords(stopWordsFile)))
 
 	// services
-	searchService := services.NewSearch(ind, db)
-	comicFetcher := services.NewFetcher(fet, db, ind)
+	searchService := services.NewSearch(ind, comicDB)
+	comicFetcher := services.NewFetcher(fet, comicDB, ind)
+	userService := services.NewUserService(userDB)
 
 	slog.Info("Fetching missing comics")
 
@@ -117,11 +122,24 @@ func Run(cfg *config.Config) {
 
 	slog.Info("Building index")
 
-	err = ind.Build(ctx, db)
+	err = ind.Build(ctx, comicDB)
 	if err != nil {
 		slog.Error("Error building index", slog.Any("error", err))
 	}
 
+	slog.Info("Adding admin")
+
+	pswd, err := bcrypt.GenerateFromPassword([]byte("admin"), bcrypt.DefaultCost)
+	if err != nil {
+		slog.Error("Error generating admin password", slog.Any("error", err))
+	}
+
+	err = userService.AddUser(ctx, &models.User{Login: "admin", Password: pswd, IsAdmin: true})
+	if err != nil {
+		slog.Error("Error adding admin", slog.Any("error", err))
+	}
+
+	// server stuff
 	c := cron.New()
 
 	_, err = c.AddFunc(cfg.UpdateSpec, func() {
@@ -135,7 +153,7 @@ func Run(cfg *config.Config) {
 
 	srv := http.Server{
 		Addr:    fmt.Sprintf("localhost:%d", cfg.Server.Port),
-		Handler: Routes(comicFetcher, searchService),
+		Handler: Routes(comicFetcher, searchService, userService, cfg.RateLimit, cfg.DeleteEvery, ctx),
 	}
 	done := make(chan os.Signal, 1)
 	signal.Notify(done, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)

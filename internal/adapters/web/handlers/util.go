@@ -18,15 +18,13 @@ func WrapHandler(fn ErrHandleFunc) http.Handler {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 			} else if errors.Is(err, ErrNotFound) {
 				http.Error(w, err.Error(), http.StatusNotFound)
+			} else if errors.Is(err, ErrBadRequest) {
+				http.Error(w, err.Error(), http.StatusBadRequest)
+			} else if errors.Is(err, ErrForbidden) {
+				http.Error(w, err.Error(), http.StatusForbidden)
 			}
 
-			reqID, idErr := contextutil.ReqID(r.Context())
-
-			if idErr != nil {
-				slog.Error("No req_id in context", slog.String("url", r.URL.String()))
-			}
-
-			slog.Error("Error in handler: ", slog.Int("req_id", reqID), slog.Any("error", err))
+			slog.Error("Error in handler: ", slog.Int("req_id", contextutil.ReqID(r.Context())), slog.Any("error", err))
 		}
 	})
 }
