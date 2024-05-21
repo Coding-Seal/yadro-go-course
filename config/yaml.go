@@ -3,6 +3,7 @@ package config
 import (
 	"fmt"
 	"os"
+	"time"
 
 	"gopkg.in/yaml.v3"
 )
@@ -33,7 +34,9 @@ type (
 		UpdateSpec string `yaml:"update_spec"`
 	}
 	Server struct {
-		Port int `yaml:"port"`
+		Port        int           `yaml:"port"`
+		RateLimit   int           `yaml:"rate_limit"`
+		DeleteEvery time.Duration `yaml:"delete_every"`
 	}
 )
 

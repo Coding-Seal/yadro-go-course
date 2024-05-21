@@ -7,6 +7,8 @@ fetcher:
   parallel: 100
 server:
   port: 8080
+  rate_limit: 10
+  delete_every: 2s
 logger:
   type: json
   level: debug
