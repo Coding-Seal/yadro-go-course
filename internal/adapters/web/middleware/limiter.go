@@ -3,7 +3,6 @@ package middleware
 import (
 	"context"
 	"log/slog"
-	"net"
 	"net/http"
 	"time"
 
@@ -27,22 +26,19 @@ func RateLimitOnID(limit int, deleteAfter time.Duration, ctx context.Context) Mi
 	}
 }
 
-func RateLimitOnIP(limit int, deleteAfter time.Duration, ctx context.Context) Middleware {
+func ConcurrencyLimiter(limit int) Middleware {
 	return func(next http.Handler) http.Handler {
-		limiter := ratelimiter.NewRateLimiterPerUser[string](limit, deleteAfter, ctx)
+		sem := make(chan struct{}, limit)
 
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			ip, _, err := net.SplitHostPort(r.RemoteAddr)
-			if err != nil {
-				w.WriteHeader(http.StatusInternalServerError)
-				return
-			}
+			if len(sem) < cap(sem) {
+				sem <- struct{}{}
 
-			if limiter.Allow(ip) {
 				next.ServeHTTP(w, r)
+				<-sem
 			} else {
 				w.WriteHeader(http.StatusTooManyRequests)
-				slog.Debug("limited request", slog.Int("req_id", contextutil.ReqID(r.Context())), slog.String("ip", ip))
+				slog.Debug("limited request", slog.Int("req_id", contextutil.ReqID(r.Context())))
 			}
 		})
 	}

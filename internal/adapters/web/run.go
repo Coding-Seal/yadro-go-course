@@ -153,7 +153,7 @@ func Run(cfg *config.Config) {
 
 	srv := http.Server{
 		Addr:    fmt.Sprintf("localhost:%d", cfg.Server.Port),
-		Handler: Routes(comicFetcher, searchService, userService, cfg.RateLimit, cfg.DeleteEvery, ctx),
+		Handler: Routes(comicFetcher, searchService, userService, cfg.ConcurrencyLimit, cfg.RateLimit, cfg.DeleteEvery, ctx),
 	}
 	done := make(chan os.Signal, 1)
 	signal.Notify(done, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
