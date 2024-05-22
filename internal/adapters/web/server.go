@@ -13,14 +13,14 @@ import (
 	"yadro-go-course/internal/core/services"
 )
 
-func Routes(fetcher *services.Fetcher, search *services.Search, user *services.UserService, concurrencyLimit, rateLimit int, deleteEvery time.Duration, ctx context.Context) http.Handler {
+func Routes(fetcher *services.Fetcher, search *services.Search, user *services.UserService, concurrencyLimit, rateLimit int, tokenMaxTime, deleteEvery time.Duration, ctx context.Context) http.Handler {
 	mux := http.NewServeMux()
 	st := middleware.Chain(middleware.AddRequestID, middleware.Logging)
 	authSt := middleware.Chain(st, middleware.ConcurrencyLimiter(concurrencyLimit), auth.Authenticate, middleware.RateLimitOnID(rateLimit, deleteEvery, ctx), auth.Authorize)
 
 	mux.Handle("GET /pics", st(handlers.WrapHandler(handlers.Search(search))))
 	mux.Handle("POST /update", authSt(handlers.WrapHandler(handlers.Update(fetcher))))
-	mux.Handle("POST /login", st(handlers.WrapHandler(auth.Login(user))))
+	mux.Handle("POST /login", st(handlers.WrapHandler(auth.Login(user, tokenMaxTime))))
 
 	return mux
 }

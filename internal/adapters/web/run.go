@@ -127,16 +127,25 @@ func Run(cfg *config.Config) {
 		slog.Error("Error building index", slog.Any("error", err))
 	}
 
-	slog.Info("Adding admin")
+	slog.Info("Adding users")
 
-	pswd, err := bcrypt.GenerateFromPassword([]byte("admin"), bcrypt.DefaultCost)
-	if err != nil {
-		slog.Error("Error generating admin password", slog.Any("error", err))
-	}
-
+	// adding users
+	pswd, _ := bcrypt.GenerateFromPassword([]byte("admin"), bcrypt.DefaultCost)
 	err = userService.AddUser(ctx, &models.User{Login: "admin", Password: pswd, IsAdmin: true})
 	if err != nil {
 		slog.Error("Error adding admin", slog.Any("error", err))
+	}
+
+	pswd, _ = bcrypt.GenerateFromPassword([]byte("alice"), bcrypt.DefaultCost)
+	err = userService.AddUser(ctx, &models.User{Login: "alice", Password: pswd, IsAdmin: true})
+	if err != nil {
+		slog.Error("Error adding user", slog.Any("error", err))
+	}
+
+	pswd, _ = bcrypt.GenerateFromPassword([]byte("bob"), bcrypt.DefaultCost)
+	err = userService.AddUser(ctx, &models.User{Login: "bob", Password: pswd, IsAdmin: true})
+	if err != nil {
+		slog.Error("Error adding user", slog.Any("error", err))
 	}
 
 	// server stuff
@@ -153,7 +162,7 @@ func Run(cfg *config.Config) {
 
 	srv := http.Server{
 		Addr:    fmt.Sprintf("localhost:%d", cfg.Server.Port),
-		Handler: Routes(comicFetcher, searchService, userService, cfg.ConcurrencyLimit, cfg.RateLimit, cfg.DeleteEvery, ctx),
+		Handler: Routes(comicFetcher, searchService, userService, cfg.ConcurrencyLimit, cfg.RateLimit, cfg.TokenMaxTime, cfg.DeleteEvery, ctx),
 	}
 	done := make(chan os.Signal, 1)
 	signal.Notify(done, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)

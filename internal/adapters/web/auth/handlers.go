@@ -3,6 +3,7 @@ package auth
 import (
 	"errors"
 	"net/http"
+	"time"
 
 	"github.com/golang-jwt/jwt/v5"
 	"golang.org/x/crypto/bcrypt"
@@ -12,7 +13,7 @@ import (
 	"yadro-go-course/internal/core/services"
 )
 
-func Login(userSrv *services.UserService) handlers.ErrHandleFunc {
+func Login(userSrv *services.UserService, tokenMaxTime time.Duration) handlers.ErrHandleFunc {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		login := r.FormValue("login")
 		pswd := []byte(r.FormValue("password"))
@@ -34,8 +35,9 @@ func Login(userSrv *services.UserService) handlers.ErrHandleFunc {
 		if err != nil {
 			return errors.Join(handlers.ErrInternal, err)
 		}
-
-		token := jwt.NewWithClaims(jwt.SigningMethodHS512, customClaims{UserID: u.ID, IsAdmin: u.IsAdmin})
+		claims := customClaims{UserID: u.ID, IsAdmin: u.IsAdmin}
+		claims.ExpiresAt.Time = time.Now().Add(tokenMaxTime)
+		token := jwt.NewWithClaims(jwt.SigningMethodHS512, claims)
 
 		tokenStr, err := token.SignedString(jwtSecret)
 		if err != nil {

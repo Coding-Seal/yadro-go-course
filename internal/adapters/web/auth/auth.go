@@ -30,7 +30,7 @@ func Authenticate(next http.Handler) http.Handler {
 				}
 
 				return jwtSecret, nil
-			})
+			}, jwt.WithExpirationRequired())
 			if err != nil {
 				w.WriteHeader(http.StatusUnauthorized)
 				slog.Debug("failed to validate jwt", slog.Int("req_id", contextutil.ReqID(r.Context())), slog.Any("error", err), slog.String("token", tokenString))

@@ -10,6 +10,7 @@ server:
   concurrency_limit: 5
   rate_limit: 10
   delete_every: 2s
+  token_max_time: 3h
 logger:
   type: json
   level: debug

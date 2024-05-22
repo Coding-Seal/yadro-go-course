@@ -38,6 +38,7 @@ type (
 		RateLimit        int           `yaml:"rate_limit"`
 		DeleteEvery      time.Duration `yaml:"delete_every"`
 		ConcurrencyLimit int           `yaml:"concurrency_limit"`
+		TokenMaxTime     time.Duration `yaml:"token_max_time"`
 	}
 )
 
