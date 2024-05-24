@@ -50,6 +50,7 @@ func main() {
 		slog.Error("Setup services failed", slog.Any("error", err))
 		os.Exit(1)
 	}
+
 	srv.SetupRoutes(cfg, ctx)
 
 	addUsers(srv, ctx)

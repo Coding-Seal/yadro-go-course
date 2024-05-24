@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"encoding/json"
 	"errors"
 	"net/http"
 	"time"
@@ -13,16 +14,25 @@ import (
 	"yadro-go-course/internal/core/services"
 )
 
+type credentials struct {
+	Login    string `json:"login"`
+	Password string `json:"password"`
+}
+
 func Login(userSrv *services.UserService, tokenMaxTime time.Duration) handlers.ErrHandleFunc {
 	return func(w http.ResponseWriter, r *http.Request) error {
-		login := r.FormValue("login")
-		pswd := []byte(r.FormValue("password"))
+		var cr credentials
 
-		if login == "" || len(pswd) == 0 {
+		err := json.NewDecoder(r.Body).Decode(&cr)
+		if err != nil {
+			return errors.Join(handlers.ErrBadRequest, err)
+		}
+
+		if cr.Login == "" || len(cr.Password) == 0 {
 			return errors.Join(handlers.ErrBadRequest, handlers.ErrNoLoginOrPassword)
 		}
 
-		u, err := userSrv.UserLogin(r.Context(), login)
+		u, err := userSrv.UserLogin(r.Context(), cr.Login)
 		if err != nil {
 			if errors.Is(err, ports.ErrNotFound) {
 				return errors.Join(handlers.ErrNotFound, err)
@@ -31,7 +41,7 @@ func Login(userSrv *services.UserService, tokenMaxTime time.Duration) handlers.E
 			return errors.Join(handlers.ErrInternal, err)
 		}
 
-		err = bcrypt.CompareHashAndPassword(u.Password, pswd)
+		err = bcrypt.CompareHashAndPassword(u.Password, []byte(cr.Password))
 		if err != nil {
 			return errors.Join(handlers.ErrInternal, err)
 		}
