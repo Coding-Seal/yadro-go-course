@@ -35,8 +35,8 @@ func Login(userSrv *services.UserService, tokenMaxTime time.Duration) handlers.E
 		if err != nil {
 			return errors.Join(handlers.ErrInternal, err)
 		}
-		claims := customClaims{UserID: u.ID, IsAdmin: u.IsAdmin}
-		claims.ExpiresAt.Time = time.Now().Add(tokenMaxTime)
+
+		claims := customClaims{UserID: u.ID, IsAdmin: u.IsAdmin, RegisteredClaims: jwt.RegisteredClaims{ExpiresAt: jwt.NewNumericDate(time.Now().Add(tokenMaxTime))}}
 		token := jwt.NewWithClaims(jwt.SigningMethodHS512, claims)
 
 		tokenStr, err := token.SignedString(jwtSecret)

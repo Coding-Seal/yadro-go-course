@@ -131,18 +131,21 @@ func Run(cfg *config.Config) {
 
 	// adding users
 	pswd, _ := bcrypt.GenerateFromPassword([]byte("admin"), bcrypt.DefaultCost)
+
 	err = userService.AddUser(ctx, &models.User{Login: "admin", Password: pswd, IsAdmin: true})
 	if err != nil {
 		slog.Error("Error adding admin", slog.Any("error", err))
 	}
 
 	pswd, _ = bcrypt.GenerateFromPassword([]byte("alice"), bcrypt.DefaultCost)
+
 	err = userService.AddUser(ctx, &models.User{Login: "alice", Password: pswd, IsAdmin: true})
 	if err != nil {
 		slog.Error("Error adding user", slog.Any("error", err))
 	}
 
 	pswd, _ = bcrypt.GenerateFromPassword([]byte("bob"), bcrypt.DefaultCost)
+
 	err = userService.AddUser(ctx, &models.User{Login: "bob", Password: pswd, IsAdmin: true})
 	if err != nil {
 		slog.Error("Error adding user", slog.Any("error", err))
