@@ -8,7 +8,7 @@ import (
 	"yadro-go-course/internal/core/ports"
 )
 
-type Search struct { // TODO: add logging
+type Search struct {
 	repo   ports.SearchComicsRepo
 	comics ports.ComicsRepo
 }

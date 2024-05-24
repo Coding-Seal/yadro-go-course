@@ -11,7 +11,7 @@ import (
 
 type Middleware func(http.Handler) http.Handler
 
-func Stack(middlewares ...Middleware) Middleware {
+func Chain(middlewares ...Middleware) Middleware {
 	return func(next http.Handler) http.Handler {
 		for i := len(middlewares) - 1; i >= 0; i-- {
 			next = middlewares[i](next)
@@ -46,13 +46,8 @@ func Logging(next http.Handler) http.Handler {
 
 		end := time.Since(start)
 
-		reqID, err := contextutil.ReqID(r.Context())
-		if err != nil {
-			slog.Error("middleware: logging", slog.Any("error", err))
-		}
-
 		slog.Debug("middleware: logging",
-			slog.Int("req_id", reqID),
+			slog.Int("req_id", contextutil.ReqID(r.Context())),
 			slog.String("method", r.Method),
 			slog.String("url", r.RequestURI),
 			slog.Int("status", ww.statusCode),

@@ -6,6 +6,6 @@ type Comic struct { // TODO: add logging
 	ports.ComicsRepo
 }
 
-func NewComic(repo ports.ComicsRepo) *Comic {
+func NewComicService(repo ports.ComicsRepo) *Comic {
 	return &Comic{repo}
 }

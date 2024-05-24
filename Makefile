@@ -18,5 +18,8 @@ test:
 .PHONY lint-strict:
 lint-strict:
 	@echo Linting...
-	golangci-lint run --enable wsl
-
+format:
+	gofumpt -w .
+	wsl -fix ./...
+.PHONY sec:
+	govulncheck
