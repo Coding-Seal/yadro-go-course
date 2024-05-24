@@ -1,19 +1,15 @@
 package middleware
 
 import (
-	"context"
 	"log/slog"
 	"net/http"
-	"time"
 
 	"yadro-go-course/internal/contextutil"
 	"yadro-go-course/pkg/ratelimiter"
 )
 
-func RateLimitOnID(limit int, deleteAfter time.Duration, ctx context.Context) Middleware {
+func RateLimitOnID(limiter *ratelimiter.PerUser[int64]) Middleware {
 	return func(next http.Handler) http.Handler {
-		limiter := ratelimiter.NewRateLimiterPerUser[int64](limit, deleteAfter, ctx)
-
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			id := contextutil.UserID(r.Context())
 			if limiter.Allow(id) {
@@ -21,6 +17,20 @@ func RateLimitOnID(limit int, deleteAfter time.Duration, ctx context.Context) Mi
 			} else {
 				w.WriteHeader(http.StatusTooManyRequests)
 				slog.Debug("limited request", slog.Int("req_id", contextutil.ReqID(r.Context())), slog.Int64("user_id", id))
+			}
+		})
+	}
+}
+
+func RateLimitOnIP(limiter *ratelimiter.PerUser[string]) Middleware {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			ip := r.RemoteAddr
+			if limiter.Allow(ip) {
+				next.ServeHTTP(w, r)
+			} else {
+				w.WriteHeader(http.StatusTooManyRequests)
+				slog.Debug("limited request", slog.Int("req_id", contextutil.ReqID(r.Context())), slog.String("ip", ip))
 			}
 		})
 	}
