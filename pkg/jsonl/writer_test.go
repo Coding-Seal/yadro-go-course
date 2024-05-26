@@ -3,9 +3,11 @@ package jsonl
 import (
 	"bytes"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
-func TestWriter_WriteJson(t *testing.T) {
+func TestWriter_Pos_WriteJson(t *testing.T) {
 	testStructs := []testStruct{
 		{Name: "Gilbert", Wins: [][]string{{"straight", "7♣"}, {"one pair", "10♥"}}},
 		{Name: "Alexa", Wins: [][]string{{"two pair", "4♠"}, {"two pair", "9♠"}}},
@@ -17,17 +19,16 @@ func TestWriter_WriteJson(t *testing.T) {
 	wr := NewWriter(buf)
 
 	for _, st := range testStructs {
-		err := wr.WriteJson(st)
-		if err != nil {
-			t.Error(err)
-		}
+		assert.NoError(t, wr.WriteJson(st))
 	}
 
-	if err := wr.Flush(); err != nil {
-		t.Error(err)
-	}
+	assert.NoError(t, wr.Flush())
+	assert.Equal(t, testString, buf.String())
+}
 
-	if !bytes.Equal(buf.Bytes(), []byte(testString)) {
-		t.Errorf("%s != %s", buf.Bytes(), []byte(testString))
-	}
+func TestWriter_Neg_WriteJson(t *testing.T) {
+	buf := bytes.NewBuffer(make([]byte, 0, len(testString)))
+	wr := NewWriter(buf)
+
+	assert.Error(t, wr.WriteJson(func() {}))
 }

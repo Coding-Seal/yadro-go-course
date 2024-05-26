@@ -2,8 +2,9 @@ package jsonl
 
 import (
 	"bytes"
-	"reflect"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 var testString string = "{\"name\":\"Gilbert\",\"wins\":[[\"straight\",\"7♣\"],[\"one pair\",\"10♥\"]]}\n{\"name\":\"Alexa\",\"wins\":[[\"two pair\",\"4♠\"],[\"two pair\",\"9♠\"]]}\n{\"name\":\"May\",\"wins\":[]}\n{\"name\":\"Deloise\",\"wins\":[[\"three of a kind\",\"5♣\"]]}\n"
@@ -28,14 +29,25 @@ func TestScanner(t *testing.T) {
 	for sc.Scan() {
 		var st testStruct
 
-		if err := sc.Json(&st); err != nil {
-			t.Error(err)
-		}
-
+		assert.NoError(t, sc.Json(&st))
 		res = append(res, st)
 	}
 
-	if !reflect.DeepEqual(res, expectedRes) {
-		t.Errorf("%v != %v", res, expectedRes)
+	assert.Equal(t, expectedRes, res)
+}
+
+func TestScannerError(t *testing.T) {
+	r := bytes.NewReader([]byte(testString))
+	sc := NewScanner(r)
+	assert.Error(t, sc.Json(&testStruct{}))
+}
+
+func TestScanner_Err(t *testing.T) {
+	r := bytes.NewReader([]byte(testString))
+	sc := NewScanner(r)
+	assert.NoError(t, sc.Err())
+
+	for sc.Scan() {
 	}
+	assert.NoError(t, sc.Err())
 }
