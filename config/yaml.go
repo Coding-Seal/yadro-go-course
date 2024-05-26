@@ -12,29 +12,27 @@ type (
 	Config struct {
 		DB      `yaml:"db"`
 		Fetcher `yaml:"fetcher"`
-		Server  `yaml:"server,omitempty"`
+		Server  `yaml:"server"`
 		Logger  `yaml:"logger"`
 		Search  `yaml:"search"`
 	}
 	Logger struct {
-		Type  string `yaml:"type"`
+		Type  string `yaml:"type,omitempty"`
 		Level string `yaml:"level"`
 	}
 	DB struct {
-		Type    string `yaml:"type"`
-		Url     string `yaml:"url"`
-		Version uint   `yaml:"version"`
+		Url string `yaml:"url"`
 	}
 	Search struct {
-		StopWordsFile string `yaml:"stop_words_file"`
+		StopWordsFile string `yaml:"stop_words_file,omitempty"`
 	}
 	Fetcher struct {
-		SourceURL  string `yaml:"source_url"`
-		Parallel   int    `yaml:"parallel"`
+		SourceURL  string `yaml:"source_url,omitempty"`
+		Parallel   int    `yaml:"parallel,omitempty"`
 		UpdateSpec string `yaml:"update_spec"`
 	}
 	Server struct {
-		Port             int           `yaml:"port"`
+		Port             int           `yaml:"port,omitempty"`
 		RateLimit        int           `yaml:"rate_limit"`
 		DeleteEvery      time.Duration `yaml:"delete_every"`
 		ConcurrencyLimit int           `yaml:"concurrency_limit"`
@@ -45,23 +43,20 @@ type (
 func NewConfig(configPath string) (*Config, error) {
 	config := &Config{
 		DB: DB{
-			Type: "json",
-			Url:  "db.jsonl",
+			Url: "comics.db",
 		},
 		Server: Server{
 			Port: 8080,
 		},
 		Logger: Logger{
-			Type:  "json",
-			Level: "debug",
+			Type: "json",
 		},
 		Search: Search{
 			StopWordsFile: "stopwords.txt",
 		},
 		Fetcher: Fetcher{
-			SourceURL:  "https://xkcd.com",
-			Parallel:   100,
-			UpdateSpec: "0 0 * * ?",
+			SourceURL: "https://xkcd.com",
+			Parallel:  100,
 		},
 	}
 
