@@ -7,6 +7,8 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+
+	testfetcher "yadro-go-course/test/fetcher"
 )
 
 var concurrencyLimits = []int{50, 100, 200, 250, 300, 350, 400, 500, 750, 1000, 1500}
@@ -55,7 +57,10 @@ func BenchmarkFetcher_Comics(b *testing.B) {
 }
 
 func TestFetcher_SearchLastID(t *testing.T) {
-	fetcher := NewFetcher("https://xkcd.com", 0)
+	lastID := 5
+	srv := testfetcher.NewMockXKCD(lastID)
+	t.Cleanup(srv.Close)
+	fetcher := NewFetcher(srv.URL, 0)
 	lastID, err := fetcher.LastID(context.Background())
 	assert.NoError(t, err)
 	id, err := fetcher.SearchLastID(context.Background())
@@ -64,22 +69,28 @@ func TestFetcher_SearchLastID(t *testing.T) {
 }
 
 func TestFetcher_Comic(t *testing.T) {
-	fetcher := NewFetcher("https://xkcd.com", 0)
+	srv := testfetcher.NewMockXKCD(5)
+	t.Cleanup(srv.Close)
+	fetcher := NewFetcher(srv.URL, 0)
 	c, err := fetcher.Comic(context.Background(), 1)
 	assert.NoError(t, err)
 	assert.Equal(t, c.ID, 1)
 }
 
 func TestFetcher_Comics(t *testing.T) {
-	fetcher := NewFetcher("https://xkcd.com", 10)
+	lastID := 11
+	srv := testfetcher.NewMockXKCD(lastID)
+	t.Cleanup(srv.Close)
+
+	fetcher := NewFetcher(srv.URL, 10)
 
 	ids, fet := fetcher.Comics(context.Background(), 10)
-	for i := 1; i < 11; i++ {
+	for i := 1; i <= 11; i++ {
 		ids <- i
 	}
 	close(ids)
 
-	for i := 1; i < 11; i++ {
+	for i := 1; i <= 11; i++ {
 		f := <-fet
 		assert.NoError(t, f.Err())
 	}
