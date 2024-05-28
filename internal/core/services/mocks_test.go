@@ -4,10 +4,11 @@ import (
 	"context"
 	"strconv"
 
+	"yadro-go-course/internal/core/ports"
+
 	"github.com/stretchr/testify/mock"
 
 	"yadro-go-course/internal/core/models"
-	"yadro-go-course/internal/core/ports"
 )
 
 type comicRepoMock struct {
