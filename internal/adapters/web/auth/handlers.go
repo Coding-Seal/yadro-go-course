@@ -43,7 +43,7 @@ func Login(userSrv *services.UserService, tokenMaxTime time.Duration) handlers.E
 
 		err = bcrypt.CompareHashAndPassword(u.Password, []byte(cr.Password))
 		if err != nil {
-			return errors.Join(handlers.ErrInternal, err)
+			return errors.Join(handlers.ErrForbidden, err)
 		}
 
 		claims := customClaims{UserID: u.ID, IsAdmin: u.IsAdmin, RegisteredClaims: jwt.RegisteredClaims{ExpiresAt: jwt.NewNumericDate(time.Now().Add(tokenMaxTime))}}
