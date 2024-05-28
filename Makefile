@@ -12,8 +12,8 @@ format:
 	@wsl -fix ./...
 .PHONY: sec
 sec:
-	govulncheck
-	trivy fs .
+	@govulncheck
+	@trivy fs .
 .PHONY: lint
 lint:
 	@echo Linting...
@@ -30,13 +30,8 @@ test:
 .PHONY: e2e
 e2e: build
 	@echo Running e2e tests...
-	./${BINARY_NAME} -p=${PORT} 2>&1 1>/dev/null &
-	sleep 3s;
-	python3 test/e2e/pics.py ${PORT};
-	python3 test/e2e/update.py ${PORT};
-	kill $$(lsof -t -i:${PORT})
-
-
-
-
-
+	@./${BINARY_NAME} -p=${PORT} 2>&1 1>/dev/null &
+	@sleep 3s;
+	@python3 test/e2e/update.py ${PORT};
+	@python3 test/e2e/pics.py ${PORT};
+	@kill $$(lsof -t -i:${PORT})
