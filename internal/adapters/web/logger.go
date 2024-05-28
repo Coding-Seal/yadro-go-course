@@ -1,7 +1,6 @@
 package web
 
 import (
-	"log"
 	"log/slog"
 	"os"
 
@@ -23,7 +22,7 @@ func SetupLogger(cfg *config.Config) {
 	case "error":
 		opts.Level = slog.LevelError
 	default:
-		log.Fatalln("Invalid log level")
+		panic("Invalid log level")
 	}
 
 	var logHand slog.Handler
@@ -34,7 +33,7 @@ func SetupLogger(cfg *config.Config) {
 	case "text":
 		logHand = slog.NewTextHandler(os.Stdout, &opts)
 	default:
-		log.Fatalln("Invalid log type")
+		panic("Invalid log type")
 	}
 
 	slog.SetDefault(slog.New(logHand))

@@ -3,10 +3,11 @@ db:
 fetcher:
   source_url: https://xkcd.com
   parallel: 100
+  update_spec: "0 0 * * *"
 server:
   port: 8080
-  concurrency_limit: 5
-  rate_limit: 10
+  concurrency_limit: 20
+  rate_limit: 20
   delete_every: 2s
   token_max_time: 3h
 logger:
