@@ -18,3 +18,6 @@ curl -v -H "Authorization: <token>" -X POST http://localhost:8080/api/update
 ## API
 Все эндпоинты для работы с REST API имеют префикс /api
 Специально для 9 задания
+
+## Test Coverage
+![Cover.svg](test/out/cover.svg)

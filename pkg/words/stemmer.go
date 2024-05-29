@@ -3,15 +3,11 @@ package words
 import (
 	"bufio"
 	"io"
-	"regexp"
-	"slices"
 	"strings"
 	"unicode"
 
 	"github.com/kljensen/snowball"
 )
-
-var nonWordSymbolRegexp = regexp.MustCompile("[^0-9A-Za-z_]+")
 
 type Stemmer struct {
 	stopWords map[string]struct{}
@@ -69,24 +65,12 @@ func ParseStopWords(reader io.Reader) map[string]struct{} {
 }
 
 func ParsePhrase(phrase string) []string {
-	phrase = nonWordSymbolRegexp.ReplaceAllString(phrase, " ")
 	words := strings.FieldsFunc(phrase, func(r rune) bool {
 		return !(unicode.IsNumber(r) || unicode.IsLetter(r))
 	})
-	deleted := 0
-
-	for i := 0; i < len(words)-deleted; i++ {
-		word := strings.ToLower(words[i])
-		if word != "" {
-			words[i] = word
-		} else {
-			words[i] = words[len(words)-deleted-1]
-			i--
-			deleted++
-		}
+	for i := 0; i < len(words); i++ {
+		words[i] = strings.ToLower(words[i])
 	}
-
-	words = slices.Delete(words, len(words)-deleted, len(words))
 
 	return words
 }

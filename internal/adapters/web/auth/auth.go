@@ -58,6 +58,7 @@ func Authorize(next http.Handler) http.Handler {
 			slog.Debug("authorized user", slog.Int("req_id", contextutil.ReqID(r.Context())), slog.Int64("user_id", contextutil.UserID(r.Context())))
 			next.ServeHTTP(w, r)
 		} else {
+			w.WriteHeader(http.StatusUnauthorized)
 			slog.Debug("failed to authorized user", slog.Int("req_id", contextutil.ReqID(r.Context())), slog.Int64("user_id", contextutil.UserID(r.Context())))
 		}
 	})
