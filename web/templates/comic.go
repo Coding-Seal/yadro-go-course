@@ -3,7 +3,6 @@ package templates
 import (
 	"embed"
 	"html/template"
-	"log/slog"
 	"net/http"
 )
 
@@ -53,6 +52,5 @@ func Update(w http.ResponseWriter, params UpdateParams) error {
 }
 
 func Main(w http.ResponseWriter, params MainParams) error {
-	slog.Debug("Executing main page")
 	return main.Execute(w, params)
 }

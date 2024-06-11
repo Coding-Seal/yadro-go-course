@@ -8,11 +8,12 @@ import (
 	"testing"
 	"time"
 
+	http_util "yadro-go-course/pkg/http-util"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"golang.org/x/crypto/bcrypt"
 
-	"yadro-go-course/internal/adapters/rest/handlers"
 	"yadro-go-course/internal/core/models"
 	"yadro-go-course/internal/core/ports"
 	"yadro-go-course/internal/core/services"
@@ -83,7 +84,7 @@ func TestLogin_NoSuchUser(t *testing.T) {
 	w := httptest.NewRecorder()
 	h := Login(services.NewUserService(&m), time.Minute)
 	err := h(w, r)
-	assert.ErrorIs(t, err, handlers.ErrNotFound)
+	assert.ErrorIs(t, err, http_util.ErrNotFound)
 }
 
 func TestLogin_WrongPassword(t *testing.T) {
@@ -104,7 +105,7 @@ func TestLogin_WrongPassword(t *testing.T) {
 	w := httptest.NewRecorder()
 	h := Login(services.NewUserService(&m), time.Minute)
 	err := h(w, r)
-	assert.ErrorIs(t, err, handlers.ErrForbidden)
+	assert.ErrorIs(t, err, http_util.ErrForbidden)
 }
 
 func TestLogin_NoLogin(t *testing.T) {
@@ -125,5 +126,5 @@ func TestLogin_NoLogin(t *testing.T) {
 	w := httptest.NewRecorder()
 	h := Login(services.NewUserService(&m), time.Minute)
 	err := h(w, r)
-	assert.ErrorIs(t, err, handlers.ErrBadRequest)
+	assert.ErrorIs(t, err, http_util.ErrBadRequest)
 }

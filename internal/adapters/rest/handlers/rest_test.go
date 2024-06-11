@@ -6,6 +6,8 @@ import (
 	"strconv"
 	"testing"
 
+	http_util "yadro-go-course/pkg/http-util"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 
@@ -65,7 +67,7 @@ func TestUpdate(t *testing.T) {
 	w := httptest.NewRecorder()
 	r := httptest.NewRequest("GET", "/", nil)
 	err := h(w, r)
-	assert.ErrorIs(t, err, ErrInternal)
+	assert.ErrorIs(t, err, http_util.ErrInternal)
 }
 
 func TestSearch(t *testing.T) {

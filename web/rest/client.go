@@ -5,11 +5,15 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"time"
 )
 
-var ErrNotAuthorized = errors.New("not authorized")
+var (
+	ErrNotAuthorized = errors.New("rest api: not authorized")
+	ErrInternal      = errors.New("rest api: internal error ")
+)
 
 type Client struct {
 	baseURL string
@@ -30,32 +34,32 @@ func (c *Client) Login(ctx context.Context, login, pswd string) (string, error) 
 
 	err := json.NewEncoder(body).Encode(map[string]string{"login": login, "password": pswd})
 	if err != nil {
-		return "", err
+		return "", errors.Join(err, ErrInternal)
 	}
 
 	req, err := http.NewRequestWithContext(ctx, "POST", c.baseURL+"/api/login", body)
 	if err != nil {
-		return "", err
+		return "", errors.Join(err, ErrInternal)
 	}
 
 	resp, err := c.c.Do(req)
 	if err != nil {
-		return "", err
+		return "", ErrNotAuthorized
 	}
 
 	if resp.StatusCode != http.StatusOK {
 		return "", ErrNotAuthorized
 	}
+
 	token := resp.Header.Get("Authorization")
+
 	return token, nil
 }
 
 func (c *Client) SearchPics(ctx context.Context, query string) ([]string, error) {
-	var pics []string
-
 	req, err := http.NewRequestWithContext(ctx, "GET", c.baseURL+"/api/pics", nil)
 	if err != nil {
-		return nil, err
+		return nil, errors.Join(err, ErrInternal)
 	}
 
 	q := req.URL.Query()
@@ -64,18 +68,22 @@ func (c *Client) SearchPics(ctx context.Context, query string) ([]string, error)
 
 	resp, err := c.c.Do(req)
 	if err != nil {
-		return nil, err
+		return nil, errors.Join(err, ErrInternal)
 	}
-
 	if resp.StatusCode != http.StatusOK {
-		return nil, err
+		return nil, nil
+	}
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("%w %s", ErrInternal, http.StatusText(resp.StatusCode))
 	}
 
 	decoder := json.NewDecoder(resp.Body)
 
+	var pics []string
+
 	err = decoder.Decode(&pics)
 	if err != nil {
-		return nil, err
+		return nil, errors.Join(err, ErrInternal)
 	}
 
 	return pics, nil
@@ -84,18 +92,18 @@ func (c *Client) SearchPics(ctx context.Context, query string) ([]string, error)
 func (c *Client) Update(ctx context.Context, token string) error {
 	req, err := http.NewRequestWithContext(ctx, "POST", c.baseURL+"/api/update", nil)
 	if err != nil {
-		return err
+		return errors.Join(err, ErrInternal)
 	}
 
 	req.Header.Add("Authorization", token)
 
 	resp, err := c.c.Do(req)
 	if err != nil {
-		return err
+		return errors.Join(err, ErrInternal)
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return err
+		return fmt.Errorf("%w %s", ErrInternal, http.StatusText(resp.StatusCode))
 	}
 
 	return nil

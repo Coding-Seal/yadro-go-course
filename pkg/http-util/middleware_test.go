@@ -1,4 +1,4 @@
-package middleware
+package http_util
 
 import (
 	"context"
@@ -10,6 +10,10 @@ import (
 
 	"yadro-go-course/internal/contextutil"
 )
+
+var dummyHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusOK)
+})
 
 func TestChain(t *testing.T) {
 	c := Chain(AddRequestID, Logging)

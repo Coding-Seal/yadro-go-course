@@ -1,25 +1,32 @@
 package handlers
 
 import (
-	"log/slog"
+	"errors"
 	"net/http"
+
+	httputil "yadro-go-course/pkg/http-util"
 
 	"yadro-go-course/web/rest"
 	"yadro-go-course/web/templates"
 )
 
-func Pics(c *rest.Client) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		slog.Debug("Comics", slog.String("url", r.URL.Path))
+func Pics(c *rest.Client) httputil.ErrHandleFunc {
+	return func(w http.ResponseWriter, r *http.Request) error {
 		search := r.FormValue("query")
-		pics, _ := c.SearchPics(r.Context(), search)
 
-		err := templates.Pics(w, templates.PicsParams{
+		pics, err := c.SearchPics(r.Context(), search)
+		if err != nil {
+			return errors.Join(err, httputil.ErrInternal)
+		}
+
+		err = templates.Pics(w, templates.PicsParams{
 			Urls:   pics,
 			Layout: templates.Layout{},
 		})
 		if err != nil {
-			slog.Error("Pics template error", slog.Any("error", err))
+			return errors.Join(err, httputil.ErrInternal)
 		}
-	})
+
+		return nil
+	}
 }

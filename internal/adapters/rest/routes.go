@@ -5,6 +5,9 @@ import (
 	"net/http"
 	"time"
 
+	"yadro-go-course/internal/adapters/rest/handlers"
+	"yadro-go-course/pkg/http-util"
+
 	"yadro-go-course/config"
 	"yadro-go-course/pkg/ratelimiter"
 
@@ -12,12 +15,11 @@ import (
 
 	"yadro-go-course/internal/adapters/rest/middleware"
 
-	"yadro-go-course/internal/adapters/rest/handlers"
 	"yadro-go-course/internal/core/services"
 )
 
 func Api(fetcher *services.Fetcher, search *services.Search, user *services.UserService, cfg *config.Config, ctx context.Context) http.Handler {
-	base := middleware.Chain(middleware.AddRequestID, middleware.Logging, middleware.ConcurrencyLimiter(cfg.ConcurrencyLimit))
+	base := http_util.Chain(http_util.AddRequestID, http_util.Logging, middleware.ConcurrencyLimiter(cfg.ConcurrencyLimit))
 
 	limiter := ratelimiter.NewRateLimiterPerUser[string](cfg.RateLimit, cfg.DeleteEvery)
 	ticker := time.NewTicker(cfg.DeleteEvery)
@@ -34,12 +36,12 @@ func Api(fetcher *services.Fetcher, search *services.Search, user *services.User
 	}()
 
 	limitOnIP := middleware.RateLimitOnIP(limiter)
-	authSt := middleware.Chain(auth.Authenticate, auth.Authorize)
+	authSt := http_util.Chain(auth.Authenticate, auth.Authorize)
 
 	mux := http.NewServeMux()
-	mux.Handle("POST /login", middleware.Chain(base, limitOnIP)(handlers.WrapHandler(auth.Login(user, cfg.TokenMaxTime))))
-	mux.Handle("GET /pics", middleware.Chain(base, limitOnIP)(handlers.WrapHandler(handlers.Search(search))))
-	mux.Handle("POST /update", middleware.Chain(base, authSt)(handlers.WrapHandler(handlers.Update(fetcher))))
+	mux.Handle("POST /login", http_util.Chain(base, limitOnIP)(http_util.WrapHandler(auth.Login(user, cfg.TokenMaxTime))))
+	mux.Handle("GET /pics", http_util.Chain(base, limitOnIP)(http_util.WrapHandler(handlers.Search(search))))
+	mux.Handle("POST /update", http_util.Chain(base, authSt)(http_util.WrapHandler(handlers.Update(fetcher))))
 
 	return mux
 }

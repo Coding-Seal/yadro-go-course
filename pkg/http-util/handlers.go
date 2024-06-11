@@ -1,4 +1,4 @@
-package handlers
+package http_util
 
 import (
 	"encoding/json"
@@ -29,7 +29,7 @@ func WrapHandler(fn ErrHandleFunc) http.Handler {
 	})
 }
 
-func writeJson(w http.ResponseWriter, v any) error {
+func WriteJson(w http.ResponseWriter, v any) error {
 	en := json.NewEncoder(w)
 
 	err := en.Encode(v)

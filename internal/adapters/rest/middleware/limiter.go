@@ -4,11 +4,13 @@ import (
 	"log/slog"
 	"net/http"
 
+	"yadro-go-course/pkg/http-util"
+
 	"yadro-go-course/internal/contextutil"
 	"yadro-go-course/pkg/ratelimiter"
 )
 
-func RateLimitOnID(limiter *ratelimiter.PerUser[int64]) Middleware {
+func RateLimitOnID(limiter *ratelimiter.PerUser[int64]) http_util.Middleware {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			id := contextutil.UserID(r.Context())
@@ -22,7 +24,7 @@ func RateLimitOnID(limiter *ratelimiter.PerUser[int64]) Middleware {
 	}
 }
 
-func RateLimitOnIP(limiter *ratelimiter.PerUser[string]) Middleware {
+func RateLimitOnIP(limiter *ratelimiter.PerUser[string]) http_util.Middleware {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			ip := r.RemoteAddr
@@ -36,7 +38,7 @@ func RateLimitOnIP(limiter *ratelimiter.PerUser[string]) Middleware {
 	}
 }
 
-func ConcurrencyLimiter(limit int) Middleware {
+func ConcurrencyLimiter(limit int) http_util.Middleware {
 	return func(next http.Handler) http.Handler {
 		sem := make(chan struct{}, limit)
 
