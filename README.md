@@ -1,5 +1,6 @@
 # yadro-go-course
 Course from Yadro on microservices with Go
+![video](example.GIF)
 ## Пользователи
 Есть три пользователя:
 * login: admin password: admin

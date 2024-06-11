@@ -1,0 +1,53 @@
+{{ define "content" }}
+
+{{ template "search" . }}
+{{ template "comic-grid" . }}
+<div id="myModal" class="modal">
+    <span class="close" onclick="closeModal()">&times;</span>
+    <img class="modal-content" id="img01">
+    <div id="caption"></div>
+</div>
+<script>
+    function openModal(imgSrc) {
+        var modal = document.getElementById("myModal");
+        var modalImg = document.getElementById("img01");
+        var captionText = document.getElementById("caption");
+        modal.style.display = "block";
+        modalImg.src = imgSrc;
+        captionText.innerHTML = imgSrc;
+
+        window.addEventListener('click', function(event) {
+            if (event.target == modal) {
+                closeModal();
+            }
+        });
+    }
+
+    function closeModal() {
+        document.getElementById("myModal").style.display = "none";
+    }
+</script>
+{{ end }}
+
+{{ define "search"}}
+<div class="search-container">
+    <form action="/comics" method="get">
+        <input type="text" name="query" placeholder="Search..." required>
+        <button type="submit">Search</button>
+    </form>
+</div>
+{{ end }}
+
+{{ define "comic-grid" }}
+<div class="comic-card-grid">
+    {{ range .Urls }}
+        {{ template "comic-card" . }}
+    {{ end }}
+</div>
+{{ end }}
+
+{{ define "comic-card" }}
+<div class="comic-card">
+    <img src="{{ . }}" alt="{{ . }}" onclick="openModal('{{ .}}')">
+</div>
+{{ end }}

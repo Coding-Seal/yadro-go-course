@@ -13,7 +13,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 
 	"yadro-go-course/config"
-	"yadro-go-course/internal/adapters/web"
+	"yadro-go-course/internal/adapters/rest"
 	"yadro-go-course/internal/core/models"
 )
 
@@ -38,8 +38,8 @@ func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 
-	web.SetupLogger(cfg)
-	srv := web.NewServer()
+	rest.SetupLogger(cfg)
+	srv := rest.NewServer()
 
 	if err := srv.SetupServices(cfg, ctx); err != nil {
 		slog.Error("Setup services failed", slog.Any("error", err))
@@ -73,7 +73,7 @@ func main() {
 	}
 }
 
-func addUsers(srv *web.Server, ctx context.Context) {
+func addUsers(srv *rest.Server, ctx context.Context) {
 	pswd, _ := bcrypt.GenerateFromPassword([]byte("admin"), bcrypt.DefaultCost)
 
 	err := srv.UserSrv.AddUser(ctx, &models.User{Login: "admin", Password: pswd, IsAdmin: true})

@@ -1,0 +1,10 @@
+{{ define "content" }}
+<div class="login-container">
+    <h2>Login</h2>
+    <form action="/loginform" method="post">
+        <input type="text" id="login" name="login" placeholder="Login" required class="form-control">
+        <input type="password" id="pswd" name="pswd" placeholder="Password" required class="form-control">
+        <button type="submit" class="submit-button">Login</button>
+    </form>
+</div>
+{{ end }}

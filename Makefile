@@ -35,3 +35,8 @@ e2e: build
 	@python3 test/e2e/update.py ${PORT};
 	@python3 test/e2e/pics.py ${PORT};
 	@kill $$(lsof -t -i:${PORT})
+.PHONY: web
+web:
+	@echo Building...
+	@go mod tidy
+	go build -o web-server ./cmd/web
