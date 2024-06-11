@@ -13,7 +13,7 @@ import (
 // probably should move to a config file and use git-secret. Won't do
 var jwtSecret = []byte("5902dae04b5ee9cafedfacaf7dbcad276b66e647cb0f62fe7ca3cde2e6351258")
 
-type customClaims struct {
+type CustomClaims struct {
 	UserID  int64 `json:"user_id"`
 	IsAdmin bool  `json:"is_admin"`
 	jwt.RegisteredClaims
@@ -24,7 +24,7 @@ func Authenticate(next http.Handler) http.Handler {
 		if r.Header.Values("Authorization") != nil {
 			tokenString := r.Header.Values("Authorization")[0]
 
-			token, err := jwt.ParseWithClaims(tokenString, &customClaims{}, func(token *jwt.Token) (any, error) {
+			token, err := jwt.ParseWithClaims(tokenString, &CustomClaims{}, func(token *jwt.Token) (any, error) {
 				if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 					return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
 				}
@@ -34,7 +34,7 @@ func Authenticate(next http.Handler) http.Handler {
 			if err != nil {
 				w.WriteHeader(http.StatusUnauthorized)
 				slog.Debug("failed to validate jwt", slog.Int("req_id", contextutil.ReqID(r.Context())), slog.Any("error", err), slog.String("token", tokenString))
-			} else if claims, ok := token.Claims.(*customClaims); ok {
+			} else if claims, ok := token.Claims.(*CustomClaims); ok {
 				ctx := contextutil.WithUserID(r.Context(), claims.UserID)
 				ctx = contextutil.WithIsAdmin(ctx, claims.IsAdmin)
 				r = r.WithContext(ctx)

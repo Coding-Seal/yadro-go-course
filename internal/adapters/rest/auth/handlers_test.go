@@ -12,7 +12,7 @@ import (
 	"github.com/stretchr/testify/mock"
 	"golang.org/x/crypto/bcrypt"
 
-	"yadro-go-course/internal/adapters/web/handlers"
+	"yadro-go-course/internal/adapters/rest/handlers"
 	"yadro-go-course/internal/core/models"
 	"yadro-go-course/internal/core/ports"
 	"yadro-go-course/internal/core/services"

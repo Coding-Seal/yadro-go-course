@@ -9,7 +9,7 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 	"golang.org/x/crypto/bcrypt"
 
-	"yadro-go-course/internal/adapters/web/handlers"
+	"yadro-go-course/internal/adapters/rest/handlers"
 	"yadro-go-course/internal/core/ports"
 	"yadro-go-course/internal/core/services"
 )
@@ -46,7 +46,7 @@ func Login(userSrv *services.UserService, tokenMaxTime time.Duration) handlers.E
 			return errors.Join(handlers.ErrForbidden, err)
 		}
 
-		claims := customClaims{UserID: u.ID, IsAdmin: u.IsAdmin, RegisteredClaims: jwt.RegisteredClaims{ExpiresAt: jwt.NewNumericDate(time.Now().Add(tokenMaxTime))}}
+		claims := CustomClaims{UserID: u.ID, IsAdmin: u.IsAdmin, RegisteredClaims: jwt.RegisteredClaims{ExpiresAt: jwt.NewNumericDate(time.Now().Add(tokenMaxTime))}}
 		token := jwt.NewWithClaims(jwt.SigningMethodHS512, claims)
 
 		tokenStr, err := token.SignedString(jwtSecret)

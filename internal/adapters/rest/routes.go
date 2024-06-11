@@ -1,4 +1,4 @@
-package web
+package rest
 
 import (
 	"context"
@@ -8,11 +8,11 @@ import (
 	"yadro-go-course/config"
 	"yadro-go-course/pkg/ratelimiter"
 
-	"yadro-go-course/internal/adapters/web/auth"
+	"yadro-go-course/internal/adapters/rest/auth"
 
-	"yadro-go-course/internal/adapters/web/middleware"
+	"yadro-go-course/internal/adapters/rest/middleware"
 
-	"yadro-go-course/internal/adapters/web/handlers"
+	"yadro-go-course/internal/adapters/rest/handlers"
 	"yadro-go-course/internal/core/services"
 )
 

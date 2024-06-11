@@ -1,4 +1,4 @@
-package web
+package rest
 
 import (
 	"context"
@@ -8,8 +8,9 @@ import (
 	"yadro-go-course/config"
 )
 
-func TestApi(t *testing.T) {
-	Api(nil, nil, nil, &config.Config{
+func TestServer_SetupRoutes(t *testing.T) {
+	srv := NewServer()
+	srv.SetupRoutes(&config.Config{
 		Server: config.Server{
 			RateLimit:        1,
 			ConcurrencyLimit: 1,
