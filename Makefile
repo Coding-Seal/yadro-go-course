@@ -1,11 +1,12 @@
 BINARY_NAME=xkcd
 PORT=8090
 
+
 .PHONY: build
 build:
 	@echo Building...
 	@go mod tidy
-	go build -o ${BINARY_NAME} ./cmd/xkcd
+	CGO_ENABLED=1 GOARCH=amd64 GOOS=linux go build -o ${BINARY_NAME} ./cmd/xkcd
 .PHONY: format
 format:
 	@gofumpt -w .

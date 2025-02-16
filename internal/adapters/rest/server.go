@@ -98,7 +98,7 @@ func (s *Server) SetupServer(cfg *config.Config, ctx context.Context) error {
 		s.cron.Stop()
 	}()
 
-	s.Srv.Addr = fmt.Sprintf("localhost:%d", cfg.Server.Port)
+	s.Srv.Addr = fmt.Sprintf("0.0.0.0:%d", cfg.Server.Port)
 
 	return nil
 }

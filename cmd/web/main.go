@@ -24,9 +24,9 @@ func main() {
 	slog.NewTextHandler(os.Stdout, &opts)
 	slog.SetDefault(slog.New(slog.NewTextHandler(os.Stdout, &opts)))
 
-	api := rest.NewClient("http://localhost:8080")
+	api := rest.NewClient("http://api:8080")
 	srv := http.Server{
-		Addr:    "localhost:8090",
+		Addr:    "0.0.0.0:8090",
 		Handler: web.Routes(api),
 	}
 
