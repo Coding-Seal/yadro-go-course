@@ -7,10 +7,10 @@ COPY . .
 
 RUN make web
 
-FROM alpine:latest
+FROM alpine:3.21
 
 WORKDIR /web
-COPY --from=build /web/web-server .
+COPY --from=build /web/build/web-server .
 COPY  config.yaml .
 EXPOSE 8090
 

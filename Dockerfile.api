@@ -8,10 +8,10 @@ COPY . .
 
 RUN make build
 
-FROM alpine:latest
+FROM alpine:3.21
 
 WORKDIR /api
-COPY --from=build /api/xkcd .
+COPY --from=build /api/build/xkcd .
 COPY  config.yaml .
 COPY  stopwords.txt .
 EXPOSE 8080

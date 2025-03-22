@@ -1,12 +1,17 @@
 BINARY_NAME=xkcd
 PORT=8090
 
-
 .PHONY: build
 build:
 	@echo Building...
 	@go mod tidy
-	CGO_ENABLED=1 GOARCH=amd64 GOOS=linux go build -o ${BINARY_NAME} ./cmd/xkcd
+	CGO_ENABLED=1 GOARCH=amd64 GOOS=linux go build -o build/${BINARY_NAME} ./cmd/xkcd
+
+.PHONY: download 
+download:
+	@echo Downloading dependencies...
+	go mod download
+
 .PHONY: format
 format:
 	@gofumpt -w .
@@ -27,12 +32,12 @@ bench:
 test:
 	@echo Running tests ...
 	@go test -race -coverprofile test/out/cover.out ./...
-	@go tool cover -html=test/out/cover.out
+	# @go tool cover -html=test/out/cover.out
 .PHONY: e2e
 e2e: build
 	@echo Running e2e tests...
-	@./${BINARY_NAME} -p=${PORT} 2>&1 1>/dev/null &
-	@sleep 3s;
+	@build/${BINARY_NAME} -p=${PORT} 2>&1 1>/dev/null &
+	@sleep 5s;
 	@python3 test/e2e/update.py ${PORT};
 	@python3 test/e2e/pics.py ${PORT};
 	@kill $$(lsof -t -i:${PORT})
@@ -40,4 +45,4 @@ e2e: build
 web:
 	@echo Building...
 	@go mod tidy
-	go build -o web-server ./cmd/web
+	go build -o build/web-server ./cmd/web

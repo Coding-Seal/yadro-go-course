@@ -1,0 +1,91 @@
+stages:
+  - prepare
+  - build
+  - test
+  - dockerize
+
+variables:
+  TZ: "Europe/Moscow"
+  GOMODCACHE: "/go/pkg/mod"
+
+.ci_vars: &ci_vars
+  image: golang:1.24.1-alpine3.20
+  variables:
+    GIT_STRATEGY: clone
+
+download:
+  <<: *ci_vars
+  stage: prepare
+  script:
+    - "apk add make build-base"  # Install make and build tools
+    - "make download"
+  cache:
+    key: "prepare"
+    paths:
+      - /var/cache/apk/
+      - $GOMODCACHE
+
+
+build-api:
+  <<: *ci_vars
+  stage: build
+  script:
+    - "apk add make build-base"
+    - pwd
+    - ls -la
+    - which make 
+    - "make build"
+  artifacts:
+    paths:
+    - ./build/xkcd
+
+build-web:
+  <<: *ci_vars
+  stage: build
+  script:
+    - "apk add make build-base"
+    - pwd
+    - ls -la
+    - "make web"
+  artifacts:
+    paths:
+    - ./build/web-server
+
+unit_test:
+  <<: *ci_vars
+  stage: test
+  script:
+    - "apk add make build-base"
+    - pwd
+    - ls -la
+    - "make test"
+
+lint_test:
+  <<: *ci_vars
+  stage: test
+  script:
+    - "apk add make build-base"
+    - "wget -O- -nv https://raw.githubusercontent.com/golangci/golangci-lint/HEAD/install.sh | sh -s v1.64.6"
+    - export PATH=$PATH:bin
+    - pwd
+    - ls -la
+    - "make lint"
+
+dockerize-api:
+  rules:
+    - if: $CI_COMMIT_TAG
+  stage: dockerize
+  script:
+    - export SERVICE_VERSION=$CI_COMMIT_TAG
+    - echo $CI_REGISTRY_PASSWORD | docker login -u $CI_REGISTRY_USER $CI_REGISTRY --password-stdin
+    - docker build -t $CI_REGISTRY_IMAGE/api:$SERVICE_VERSION -f Dockerfile.api .
+    - docker push $CI_REGISTRY_IMAGE/api:$SERVICE_VERSION
+dockerize-web:
+  rules:
+    - if: $CI_COMMIT_TAG
+  stage: dockerize
+  script:
+    - export SERVICE_VERSION=$CI_COMMIT_TAG
+    - echo $CI_REGISTRY_PASSWORD | docker login -u $CI_REGISTRY_USER $CI_REGISTRY --password-stdin
+    - docker build -t $CI_REGISTRY_IMAGE/web:$SERVICE_VERSION -f Dockerfile.web .
+    - docker push $CI_REGISTRY_IMAGE/web:$SERVICE_VERSION
