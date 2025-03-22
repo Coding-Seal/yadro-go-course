@@ -1,0 +1,17 @@
+FROM golang:1.24.0-alpine3.21 AS build
+RUN apk add make
+
+WORKDIR /web
+
+COPY . .
+
+RUN make web
+
+FROM alpine:3.21
+
+WORKDIR /web
+COPY --from=build /web/build/web-server .
+COPY  config.yaml .
+EXPOSE 8090
+
+ENTRYPOINT ["./web-server"]

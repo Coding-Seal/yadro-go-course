@@ -50,7 +50,7 @@ func BenchmarkFetcher_Comics(b *testing.B) {
 			time.Sleep(1 * time.Second)
 
 			if numComics+EPS < lastID-1 {
-				b.Errorf(fmt.Sprintf("expected %d +- %d comics, got %d", lastID-1, EPS, len(comics)))
+				b.Errorf("expected %d +- %d comics, got %d", lastID-1, EPS, len(comics))
 			}
 		})
 	}

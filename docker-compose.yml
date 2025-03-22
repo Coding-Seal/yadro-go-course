@@ -1,0 +1,15 @@
+
+services:
+  web:
+    build:
+      dockerfile: Dockerfile.web
+    ports:
+       - "8080:8090"
+    depends_on:
+      - api
+  api:
+    build:
+      dockerfile: Dockerfile.api
+    expose:
+      - "8080"
+    
